@@ -51,8 +51,7 @@ repositories {
 }
 
 dependencies {
-    // Replace <owner> with the GitHub owner of the fork you depend on.
-    modImplementation 'com.github.<owner>:AdvancedChatCore:VERSION'
+    modImplementation 'com.github.flyingfinger1:AdvancedChatCore:VERSION'
 }
 ```
 
