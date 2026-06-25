@@ -18,7 +18,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import org.apache.logging.log4j.Level;
 
 @Environment(EnvType.CLIENT)
 public class CustomFinder extends AbstractRegistry<IFinder, CustomFinder.CustomFinderOption>
@@ -39,7 +38,7 @@ public class CustomFinder extends AbstractRegistry<IFinder, CustomFinder.CustomF
         Optional<IFinder> option = getFinder(toMatch);
         if (option.isEmpty()) {
             // Invalid :(
-            AdvancedChatCore.LOGGER.log(Level.WARN, getHelp(toMatch));
+            AdvancedChatCore.LOGGER.warn(getHelp(toMatch));
             return false;
         }
         return option.get().isMatch(input, toMatch);
@@ -62,7 +61,7 @@ public class CustomFinder extends AbstractRegistry<IFinder, CustomFinder.CustomF
         Optional<IFinder> option = getFinder(toMatch);
         if (option.isEmpty()) {
             // Invalid :(
-            AdvancedChatCore.LOGGER.log(Level.WARN, getHelp(toMatch));
+            AdvancedChatCore.LOGGER.warn(getHelp(toMatch));
             return new ArrayList<>();
         }
         return option.get().getMatches(input, toMatch);

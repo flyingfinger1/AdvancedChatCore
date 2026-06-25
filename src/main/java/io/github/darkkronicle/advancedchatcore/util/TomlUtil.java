@@ -16,7 +16,6 @@ import java.io.File;
 import lombok.experimental.UtilityClass;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import org.apache.logging.log4j.Level;
 
 @Environment(EnvType.CLIENT)
 @UtilityClass
@@ -36,8 +35,7 @@ public class TomlUtil {
             // Layer on top
             tomlParser.parse(AdvancedChatCore.getResource(defaultName), config, ParsingMode.ADD);
         } catch (Exception e) {
-            AdvancedChatCore.LOGGER.log(
-                    Level.ERROR, "Could not load default settings into " + defaultName, e);
+            AdvancedChatCore.LOGGER.error("Could not load default settings into " + defaultName, e);
         }
         return config;
     }

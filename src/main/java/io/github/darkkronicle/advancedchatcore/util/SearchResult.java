@@ -7,12 +7,13 @@
  */
 package io.github.darkkronicle.advancedchatcore.util;
 
+import io.github.darkkronicle.advancedchatcore.AdvancedChatCore;
 import io.github.darkkronicle.advancedchatcore.finder.RegexFinder;
 import io.github.darkkronicle.advancedchatcore.interfaces.IFinder;
 import lombok.Getter;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -82,6 +83,7 @@ public class SearchResult {
             int end = matcher.start(num);
             return new StringMatch(group, start, end);
         } catch (Exception e) {
+            AdvancedChatCore.LOGGER.debug("Failed to extract regex group {} from match", num, e);
             return null;
         }
     }
@@ -107,7 +109,7 @@ public class SearchResult {
                                         .replaceAll(string);
                     }
                 } catch (Exception e) {
-                    // Didn't work
+                    AdvancedChatCore.LOGGER.debug("Regex group replacement failed; using fallback", e);
                 }
             }
             return SearchUtils.replaceGroups(Collections.singletonList(matches.get(0)), string);
@@ -119,7 +121,7 @@ public class SearchResult {
                     return p.matcher(input).replaceAll(string);
                 }
             } catch (Exception e) {
-                // Did not work
+                AdvancedChatCore.LOGGER.debug("Regex replacement failed; using fallback", e);
             }
         }
         return SearchUtils.replaceGroups(matches, string);
@@ -147,7 +149,7 @@ public class SearchResult {
      * @param type {@link FindType} way to search
      * @return SearchResult with compiled searches
      */
-    public static SearchResult searchOf(Text input, String match, FindType type) {
+    public static SearchResult searchOf(Component input, String match, FindType type) {
         IFinder finder = type.getFinder();
         List<StringMatch> matches = finder.getMatches(input, match);
         return new SearchResult(input.getString(), match, finder, matches);

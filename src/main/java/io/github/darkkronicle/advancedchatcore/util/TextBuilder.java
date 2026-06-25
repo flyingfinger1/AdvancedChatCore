@@ -1,6 +1,7 @@
 package io.github.darkkronicle.advancedchatcore.util;
 
-import net.minecraft.text.*;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.network.chat.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,7 @@ public class TextBuilder {
         return siblings;
     }
 
-    public TextBuilder append(OrderedText text) {
+    public TextBuilder append(FormattedCharSequence text) {
         AtomicReference<Style> last = new AtomicReference<>(null);
         AtomicReference<StringBuilder> builder = new AtomicReference<>(new StringBuilder());
         text.accept((index, style, codePoint) -> {
@@ -48,7 +49,7 @@ public class TextBuilder {
         return this;
     }
 
-    public TextBuilder append(Text text) {
+    public TextBuilder append(Component text) {
         AtomicReference<Style> last = new AtomicReference<>(null);
         AtomicReference<StringBuilder> builder = new AtomicReference<>(new StringBuilder());
         text.visit((style, asString) -> {
@@ -71,10 +72,10 @@ public class TextBuilder {
         return this;
     }
 
-    public MutableText build() {
-        MutableText newText = Text.empty();
+    public MutableComponent build() {
+        MutableComponent newText = Component.empty();
         for (RawText sib : siblings) {
-            newText.append(Text.literal(sib.content()).fillStyle(sib.style()));
+            newText.append(Component.literal(sib.content()).withStyle(sib.style()));
         }
         return newText;
     }

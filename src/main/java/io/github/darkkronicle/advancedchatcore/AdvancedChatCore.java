@@ -12,20 +12,17 @@ import fi.dy.masa.malilib.gui.GuiBase;
 import io.github.darkkronicle.advancedchatcore.chat.AdvancedSleepingChatScreen;
 import io.github.darkkronicle.advancedchatcore.util.Colors;
 import io.github.darkkronicle.advancedchatcore.util.SyncTaskQueue;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.Random;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import net.minecraft.client.Minecraft;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Environment(EnvType.CLIENT)
 public class AdvancedChatCore implements ClientModInitializer {
@@ -43,7 +40,7 @@ public class AdvancedChatCore implements ClientModInitializer {
      */
     public static boolean CREATE_SUGGESTOR = true;
 
-    public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     private static final Random RANDOM = new Random();
 
@@ -63,13 +60,13 @@ public class AdvancedChatCore implements ClientModInitializer {
         // Important to get first since configuration options depend on colors
         Colors.getInstance().load();
         InitializationHandler.getInstance().registerInitializationHandler(new InitHandler());
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         ClientTickEvents.START_CLIENT_TICK.register(
                 s -> {
                     // Allow for delayed tasks to be added
-                    SyncTaskQueue.getInstance().update(s.inGameHud.getTicks());
+                    SyncTaskQueue.getInstance().update(s.gui.hud.getGuiTicks());
                     // Make sure we're not in the sleeping screen while awake
-                    if (client.currentScreen instanceof AdvancedSleepingChatScreen
+                    if (client.gui.screen() instanceof AdvancedSleepingChatScreen
                             && !client.player.isSleeping()) {
                         GuiBase.openGui(null);
                     }
@@ -85,14 +82,14 @@ public class AdvancedChatCore implements ClientModInitializer {
      * @throws IOException Can't be opened
      */
     public static InputStream getResource(String path) throws URISyntaxException, IOException {
-        URI uri = Thread.currentThread().getContextClassLoader().getResource(path).toURI();
-        if (!uri.getScheme().equals("file")) {
-            // it's not a file
-            return Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
-        } else {
-            // it's a file - try to access it directly!
-            return new FileInputStream(Paths.get(uri).toFile());
+        // Load from the mod's own class loader (reliable under Fabric's Knot) and fail with a
+        // checked IOException instead of an NPE when the resource is absent, so callers can
+        // recover gracefully rather than crashing the game.
+        InputStream stream = AdvancedChatCore.class.getClassLoader().getResourceAsStream(path);
+        if (stream == null) {
+            throw new IOException("Resource not found on classpath: " + path);
         }
+        return stream;
     }
 
     /**
@@ -109,13 +106,13 @@ public class AdvancedChatCore implements ClientModInitializer {
      * @return The server address if connected, 'singleplayer' if singleplayer, 'none' if none.
      */
     public static String getServer() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.isInSingleplayer()) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.isLocalServer()) {
             return "singleplayer";
         }
-        if (client.getCurrentServerEntry() == null) {
+        if (client.getCurrentServer() == null) {
             return "none";
         }
-        return client.getCurrentServerEntry().address;
+        return client.getCurrentServer().ip;
     }
 }

@@ -1,43 +1,88 @@
 plugins {
-    id 'fabric-loom' version '1.9.2'
+    // Minecraft 26.1+ ships unobfuscated: Yarn and Mojang ProGuard mappings are
+    // gone and Loom no longer remaps. See https://fabricmc.net/2026/03/14/261.html
+    id 'net.fabricmc.fabric-loom' version '1.17.12'
     id 'maven-publish'
 }
 
-group = project.maven_group
 version = project.mod_version
-archivesBaseName = project.archives_base_name
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+def javaVersion = JavaVersion.toVersion(project.javaVersion)
 
 repositories {
     mavenCentral()
-    maven { url "https://maven.fabricmc.net/" }
+    maven { name = 'FabricMC'; url = 'https://maven.fabricmc.net/' }
+    // MaLiLib (sakura-ryoko fork, published on Modrinth)
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
+    maven { name = 'ModMenu'; url = 'https://maven.terraformersmc.com/releases/' }
+    maven { name = 'JitPack'; url = 'https://jitpack.io' }
 }
 
 dependencies {
+    // No mappings: Minecraft 26.x ships unobfuscated, so Loom does not remap.
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    // Si tu utilises l’API Fabric, décommente :
-    // modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    // Mod-tied dependencies (no longer remapped -> plain implementation)
+    implementation "maven.modrinth:malilib:${project.malilib_version}"
+    compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+
+    // Minecraft-version-independent libraries, bundled via include (jar-in-jar)
+    implementation "com.github.DarkKronicle.Konstruct:addons:${project.konstruct_version}"
+    implementation "com.github.DarkKronicle.Konstruct:core:${project.konstruct_version}"
+    include "com.github.DarkKronicle.Konstruct:addons:${project.konstruct_version}"
+    include "com.github.DarkKronicle.Konstruct:core:${project.konstruct_version}"
+
+    implementation "com.electronwill.night-config:toml:${project.nightconfig_version}"
+    include "com.electronwill.night-config:toml:${project.nightconfig_version}"
+    include "com.electronwill.night-config:core:${project.nightconfig_version}"
+
+    implementation "org.mariuszgromada.math:MathParser.org-mXparser:${project.mxparser_version}"
+    include "org.mariuszgromada.math:MathParser.org-mXparser:${project.mxparser_version}"
+
+    implementation "io.github.maowimpl:owo:${project.owo_version}"
+    include "io.github.maowimpl:owo:${project.owo_version}"
+
+    implementation "org.apache.commons:commons-csv:${project.commonscsv_version}"
+    include "org.apache.commons:commons-csv:${project.commonscsv_version}"
+
+    // Lombok (compile-time only)
+    compileOnly "org.projectlombok:lombok:${project.lombok_version}"
+    annotationProcessor "org.projectlombok:lombok:${project.lombok_version}"
 }
 
-loom {
-    splitEnvironmentSourceSets()
-
-    runs {
-        client {
-            client()
-        }
-        server {
-            server()
-        }
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = Integer.parseInt(project.javaVersion)
 }
 
 java {
     withSourcesJar()
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
+}
+
+jar {
+    from('LICENSE.txt') {
+        rename { "${it}_${project.archives_base_name}" }
     }
 }
 
@@ -49,7 +94,8 @@ publishing {
     }
     repositories {
         maven {
-            url = uri("file://${project.buildDir}/repo")
+            name = 'ProjectLocal'
+            url = layout.buildDirectory.dir('repo').get().asFile.toURI()
         }
     }
 }

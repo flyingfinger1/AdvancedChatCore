@@ -1,16 +1,15 @@
 package io.github.darkkronicle.advancedchatcore.gui;
 
+import fi.dy.masa.malilib.render.GuiContext;
 import fi.dy.masa.malilib.render.RenderUtils;
 import io.github.darkkronicle.advancedchatcore.util.Color;
 import io.github.darkkronicle.advancedchatcore.util.Colors;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.resources.Identifier;
 
 import java.util.function.Consumer;
 
@@ -59,7 +58,7 @@ public class IconButton extends CleanButton {
     }
 
     @Override
-    public void render(int mouseX, int mouseY, boolean unused, MatrixStack matrixStack) {
+    public void render(GuiContext ctx, int mouseX, int mouseY, boolean unused) {
         int relMX = mouseX - x;
         int relMY = mouseY - y;
         hovered = relMX >= 0 && relMX <= width && relMY >= 0 && relMY <= height;
@@ -69,27 +68,24 @@ public class IconButton extends CleanButton {
             plusBack = Colors.getInstance().getColorOrWhite("hover").withAlpha(plusBack.alpha());
         }
 
-        RenderUtils.drawRect(x, y, width, height, plusBack.color());
+        RenderUtils.drawRect(ctx, x, y, width, height, plusBack.color());
 
-        RenderUtils.color(1, 1, 1, 1);
-        RenderUtils.bindTexture(icon);
-        DrawableHelper.drawTexture(matrixStack, x + padding, y + padding, width - (padding * 2), height - (padding * 2),
-                0, 0, iconWidth, iconHeight, iconWidth, iconHeight);
+        // Draw the whole icon texture scaled into the padded button area. This blit overload is
+        // blit(id, x1, y1, x2, y2, minU, maxU, minV, maxV) with corner coords and normalized
+        // (0..1) UVs, which is the 26.x equivalent of the old DrawableHelper.drawTexture that
+        // scaled an explicitly-sized texture. MaLiLib's drawTexturedRect samples 1:1, so cannot scale.
+        ctx.blit(icon, x + padding, y + padding, x + width - padding, y + height - padding,
+                0.0f, 1.0f, 0.0f, 1.0f);
 
         if (hovered && onHover != null) {
-            DrawableHelper.drawCenteredTextWithShadow(
-                    matrixStack,
-                    MinecraftClient.getInstance().textRenderer,
-                    onHover,
-                    mouseX + 4,
-                    mouseY - 16,
-                    Colors.getInstance().getColorOrWhite("white").color());
+            RenderUtils.drawCenteredString(ctx, mouseX + 4, mouseY - 16,
+                    Colors.getInstance().getColorOrWhite("white").color(), onHover);
         }
     }
 
     @Override
-    protected boolean onMouseClickedImpl(int mouseX, int mouseY, int mouseButton) {
-        this.mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+    protected boolean onMouseClickedImpl(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
+        this.mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
         onClick.accept(this);
         return true;
     }

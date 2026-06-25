@@ -12,8 +12,8 @@ import lombok.Data;
 import lombok.Value;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.resources.Identifier;
 
 /** Stores data about a message owner */
 @Data
@@ -26,7 +26,7 @@ public class MessageOwner {
     String name;
 
     /** Entry that has player data */
-    PlayerListEntry entry;
+    PlayerInfo entry;
 
     /**
      * The texture of the player's skin
@@ -34,6 +34,6 @@ public class MessageOwner {
      * @return Identifier with texture data
      */
     public Identifier getTexture() {
-        return entry.getSkinTexture();
+        return entry.getSkin().body().texturePath();
     }
 }

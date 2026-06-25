@@ -22,8 +22,8 @@ import lombok.Getter;
 import lombok.Value;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 
 @Environment(EnvType.CLIENT)
 public class GuiConfigHandler {
@@ -84,10 +84,10 @@ public class GuiConfigHandler {
         int y = 26;
         int rows = 1;
         ArrayList<TabButton> buttons = new ArrayList<>();
-        MinecraftClient client = MinecraftClient.getInstance();
-        int windowWidth = client.getWindow().getScaledWidth();
+        Minecraft client = Minecraft.getInstance();
+        int windowWidth = client.getWindow().getGuiScaledWidth();
         for (TabSupplier tab : tabs) {
-            int width = client.textRenderer.getWidth(tab.getName()) + 10;
+            int width = client.font.width(tab.getName()) + 10;
 
             if (x >= windowWidth - width - 10) {
                 x = 10;

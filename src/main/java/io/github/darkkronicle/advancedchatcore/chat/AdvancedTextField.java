@@ -7,34 +7,36 @@
  */
 package io.github.darkkronicle.advancedchatcore.chat;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
+import fi.dy.masa.malilib.render.GuiContext;
+import fi.dy.masa.malilib.render.RenderUtils;
 import fi.dy.masa.malilib.util.KeyCodes;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import io.github.darkkronicle.advancedchatcore.util.StringMatch;
 import io.github.darkkronicle.advancedchatcore.util.StyleFormatter;
 import io.github.darkkronicle.advancedchatcore.util.TextBuilder;
 import io.github.darkkronicle.advancedchatcore.util.TextUtil;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.OrderedText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-public class AdvancedTextField extends TextFieldWidget {
+public class AdvancedTextField extends EditBox {
 
     private final static int MAX_HISTORY = 50;
+
+    /** Semi-transparent blue used to highlight selected text (replaces the old GL XOR fill). */
+    private final static int SELECTION_COLOR = 0x80_0000FF;
 
     /**
      * Stores the last saved snapshot of the box. This ensures that not every character update is
@@ -46,42 +48,49 @@ public class AdvancedTextField extends TextFieldWidget {
     private final List<String> history = new ArrayList<>();
 
     private int focusedTicks = 0;
-    private List<Text> renderLines = new ArrayList<>();
-    private TextRenderer textRenderer;
+    private List<Component> renderLines = new ArrayList<>();
+    private Font textRenderer;
     private String suggestion = null;
     private int maxLength = 32;
     private int selectionEnd;
     private int selectionStart;
     // TODO Split?
-    private BiFunction<String, Integer, OrderedText> renderTextProvider = (string, firstCharacterIndex) -> OrderedText.styledForwardsVisitedString(string, Style.EMPTY);
+    private BiFunction<String, Integer, FormattedCharSequence> renderTextProvider = (string, firstCharacterIndex) -> FormattedCharSequence.forward(string, Style.EMPTY);
 
     private int historyIndex = -1;
 
-    public AdvancedTextField(TextRenderer textRenderer, int x, int y, int width, int height, Text text) {
+    public AdvancedTextField(Font textRenderer, int x, int y, int width, int height, Component text) {
         this(textRenderer, x, y, width, height, null, text);
     }
 
     public AdvancedTextField(
-            TextRenderer textRenderer,
+            Font textRenderer,
             int x,
             int y,
             int width,
             int height,
-            @Nullable TextFieldWidget copyFrom,
-            Text text) {
+            @Nullable EditBox copyFrom,
+            Component text) {
         super(textRenderer, x, y, width, height, copyFrom, text);
         history.add("");
         this.textRenderer = textRenderer;
         updateRender();
     }
 
-    @Override
+    /**
+     * 26.2: EditBox no longer declares {@code tick()}, so this is no longer an override. It is
+     * still driven manually from {@link AdvancedChatScreen#tick()}.
+     */
     public void tick() {
         focusedTicks++;
     }
 
-    @Override
-    public void setRenderTextProvider(BiFunction<String, Integer, OrderedText> renderTextProvider) {
+    /**
+     * 26.2: {@code setRenderTextProvider} no longer exists on EditBox (the engine uses
+     * {@code addFormatter(EditBox.TextFormatter)} instead). The provider is kept purely
+     * internally so {@link #updateRender()} can style the wrapped lines.
+     */
+    public void setRenderTextProvider(BiFunction<String, Integer, FormattedCharSequence> renderTextProvider) {
         this.renderTextProvider = renderTextProvider;
     }
 
@@ -91,16 +100,17 @@ public class AdvancedTextField extends TextFieldWidget {
         super.setMaxLength(maxLength);
     }
 
-    public static boolean isUndo(int code) {
-        // Undo (Ctrl + Z)
-        return code == KeyCodes.KEY_Z && Screen.hasControlDown() && !Screen.hasAltDown();
+    public static boolean isUndo(KeyEvent keyEvent) {
+        // Undo (Ctrl + Z). 26.2: modifier helpers moved from static Screen.* onto the
+        // InputWithModifiers event (KeyEvent#hasControlDown / #hasAltDown).
+        return keyEvent.key() == KeyCodes.KEY_Z && keyEvent.hasControlDown() && !keyEvent.hasAltDown();
     }
 
     /** Triggers undo for the text box */
     public void undo() {
         // Save the current snapshot if it's been edited
-        if (!this.lastSaved.equals(this.getText()) && historyIndex < 0) {
-            addToHistory(getText());
+        if (!this.lastSaved.equals(this.getValue()) && historyIndex < 0) {
+            addToHistory(getValue());
         }
         // History index < 0 means not in the middle of undoing
         if (historyIndex < 0) {
@@ -124,15 +134,15 @@ public class AdvancedTextField extends TextFieldWidget {
     }
 
     @Override
-    public void write(String text) {
-        super.write(text);
+    public void insertText(String text) {
+        super.insertText(text);
         updateHistory();
         updateRender();
     }
 
     @Override
-    public void eraseCharacters(int characterOffset) {
-        super.eraseCharacters(characterOffset);
+    public void deleteChars(int characterOffset) {
+        super.deleteChars(characterOffset);
         updateHistory();
         updateRender();
     }
@@ -143,22 +153,26 @@ public class AdvancedTextField extends TextFieldWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-
-        int renderY = getY() - (renderLines.size() - 1) * (textRenderer.fontHeight + 2);
+    public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
+        double mouseX = mouseButtonEvent.x();
+        double mouseY = mouseButtonEvent.y();
+        int renderY = getY() - (renderLines.size() - 1) * (textRenderer.lineHeight + 2);
         if (mouseY < renderY - 2 || mouseY > getY() + height + 2 || mouseX < getX() - 2 || mouseX > getX() + width + 4) {
             return false;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(mouseButtonEvent, doubleClick);
     }
 
     @Override
-    public void renderButton(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-        int color = 0xE0E0E0;
-        int cursor = getCursor();
+    public void extractWidgetRenderState(GuiGraphicsExtractor gg, int mouseX, int mouseY, float partialTick) {
+        GuiContext ctx = GuiContext.fromGuiGraphics(gg);
+        // 26.x text colors are ARGB; without the alpha byte the text renders fully transparent
+        // (leaving only the shadow, which looks like near-black text).
+        int color = 0xFFE0E0E0;
+        int cursor = getCursorPosition();
         int cursorRow = renderLines.size() - 1;
         boolean renderCursor = this.isFocused() && focusedTicks / 6 % 2 == 0;
-        int renderY = getY() - (renderLines.size() - 1) * (textRenderer.fontHeight + 2);
+        int renderY = getY() - (renderLines.size() - 1) * (textRenderer.lineHeight + 2);
         int endX = 0;
         int charCount = 0;
         int cursorX = -1;
@@ -175,61 +189,69 @@ public class AdvancedTextField extends TextFieldWidget {
             selEnd = this.selectionStart;
         }
         int x = getX();
-        int y = getY()    ;
-        fill(matrices, getX() - 2, renderY - 2, getX() + width + 4, getY() + height + 4, ConfigStorage.ChatScreen.COLOR.config.get().color());
+        int y = getY();
+        // Background fill
+        RenderUtils.drawRect(ctx, getX() - 2, renderY - 2, width + 6, (getY() + height + 4) - (renderY - 2),
+                ConfigStorage.ChatScreen.COLOR.config.get().color());
         for (int line = 0; line < renderLines.size(); line++) {
-            Text text = renderLines.get(line);
+            Component text = renderLines.get(line);
             if (cursor >= charCount && cursor < text.getString().length() + charCount) {
-                cursorX = textRenderer.getWidth(text.getString().substring(0, cursor - charCount));
+                cursorX = textRenderer.width(text.getString().substring(0, cursor - charCount));
                 cursorRow = line;
             }
-            endX = textRenderer.drawWithShadow(matrices, text, x, renderY, color);
+            // Draw this wrapped line (with shadow) and remember where it ended
+            ctx.drawString(textRenderer, text, x, renderY, color, true);
+            endX = x + textRenderer.width(text);
             if (selection) {
                 if (!started && selStart >= charCount && selStart <= text.getString().length() + charCount) {
                     started = true;
-                    int startX = textRenderer.getWidth(TextUtil.truncate(text, new StringMatch("", 0, selStart - charCount)));
+                    int startX = textRenderer.width(TextUtil.truncate(text, new StringMatch("", 0, selStart - charCount)));
                     if (selEnd > charCount && selEnd <= text.getString().length() + charCount) {
                         ended = true;
-                        int sEndX = textRenderer.getWidth(TextUtil.truncate(text, new StringMatch("", 0, selEnd - charCount)));
-                        drawSelectionHighlight(x + startX, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        int sEndX = textRenderer.width(TextUtil.truncate(text, new StringMatch("", 0, selEnd - charCount)));
+                        drawSelectionHighlight(ctx, x + startX, renderY - 1, x + sEndX, renderY + textRenderer.lineHeight);
                     } else {
-                        int sEndX = textRenderer.getWidth(text);
-                        drawSelectionHighlight(x + startX, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        int sEndX = textRenderer.width(text);
+                        drawSelectionHighlight(ctx, x + startX, renderY - 1, x + sEndX, renderY + textRenderer.lineHeight);
                     }
                 } else if (started && !ended) {
                     if (selEnd >= charCount && selEnd <= text.getString().length() + charCount) {
                         ended = true;
-                        int sEndX = textRenderer.getWidth(TextUtil.truncate(text, new StringMatch("", 0, selEnd - charCount)));
-                        drawSelectionHighlight(x, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        int sEndX = textRenderer.width(TextUtil.truncate(text, new StringMatch("", 0, selEnd - charCount)));
+                        drawSelectionHighlight(ctx, x, renderY - 1, x + sEndX, renderY + textRenderer.lineHeight);
                     } else {
-                        int sEndX = textRenderer.getWidth(text);
-                        drawSelectionHighlight(x, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        int sEndX = textRenderer.width(text);
+                        drawSelectionHighlight(ctx, x, renderY - 1, x + sEndX, renderY + textRenderer.lineHeight);
                     }
                 }
             }
-            renderY += textRenderer.fontHeight + 2;
+            renderY += textRenderer.lineHeight + 2;
             charCount += text.getString().length();
         }
         if (cursorX < 0) {
             cursorX = endX;
         }
-        boolean cursorAtEnd = getCursor() == getText().length();
+        boolean cursorAtEnd = getCursorPosition() == getValue().length();
         if (!cursorAtEnd && this.suggestion != null) {
-            this.textRenderer.drawWithShadow(matrices, this.suggestion, endX - 1, y, -8355712);
+            ctx.drawString(this.textRenderer, this.suggestion, endX - 1, y, -8355712, true);
         }
         if (renderCursor) {
-            int cursorY = y - (renderLines.size() - 1 - cursorRow) * (textRenderer.fontHeight + 2);
+            int cursorY = y - (renderLines.size() - 1 - cursorRow) * (textRenderer.lineHeight + 2);
             if (cursorAtEnd) {
-                DrawableHelper.fill(matrices, cursorX, cursorY - 1, cursorX + 1, cursorY + 1 + this.textRenderer.fontHeight, -3092272);
+                RenderUtils.drawRect(ctx, cursorX, cursorY - 1, 1, 2 + this.textRenderer.lineHeight, -3092272);
             } else {
-                this.textRenderer.drawWithShadow(matrices, "_", x + cursorX, cursorY, color);
+                ctx.drawString(this.textRenderer, "_", x + cursorX, cursorY, color, true);
             }
         }
     }
 
-    private void drawSelectionHighlight(int x1, int y1, int x2, int y2) {
+    /**
+     * Draws the selection highlight. 26.2 removed the GL XOR (Tessellator/BufferBuilder/logicOp)
+     * path entirely, so this is now a plain semi-transparent fill rect, exactly like vanilla
+     * EditBox does today.
+     */
+    private void drawSelectionHighlight(GuiContext ctx, int x1, int y1, int x2, int y2) {
         int x = getX();
-        int y = getY();
         int i;
         if (x1 < x2) {
             i = x1;
@@ -247,65 +269,64 @@ public class AdvancedTextField extends TextFieldWidget {
         if (x1 > x + this.width) {
             x1 = x + this.width;
         }
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder bufferBuilder = tessellator.getBuffer();
-        RenderSystem.setShader(GameRenderer::getPositionProgram);
-        RenderSystem.setShaderColor(0.0f, 0.0f, 1.0f, 1.0f);
-//        RenderSystem.disableTexture();
-        RenderSystem.enableColorLogicOp();
-        RenderSystem.logicOp(GlStateManager.LogicOp.OR_REVERSE);
-        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
-        bufferBuilder.vertex(x1, y2, 0.0).next();
-        bufferBuilder.vertex(x2, y2, 0.0).next();
-        bufferBuilder.vertex(x2, y1, 0.0).next();
-        bufferBuilder.vertex(x1, y1, 0.0).next();
-        tessellator.draw();
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableColorLogicOp();
-//        RenderSystem.enableTexture();
+        // x1/y1 are now the larger coordinates; normalize to (left, top, width, height)
+        int left = Math.min(x1, x2);
+        int top = Math.min(y1, y2);
+        int w = Math.abs(x1 - x2);
+        int h = Math.abs(y1 - y2);
+        RenderUtils.drawRect(ctx, left, top, w, h, SELECTION_COLOR);
+    }
+
+    /**
+     * 26.2: EditBox no longer exposes {@code setSelectionStart}/{@code setSelectionEnd} to
+     * override. The selection is the span between the cursor ({@link #getCursorPosition()}) and
+     * the highlight position. We mirror both ends here so the custom multi-line highlight render
+     * keeps working.
+     */
+    @Override
+    public void setCursorPosition(int cursor) {
+        super.setCursorPosition(cursor);
+        this.selectionStart = Mth.clamp(getCursorPosition(), 0, getValue().length());
     }
 
     @Override
-    public void setSelectionStart(int cursor) {
-        this.selectionStart = MathHelper.clamp(cursor, 0, getText().length());
-        super.setSelectionStart(cursor);
-    }
-
-    @Override
-    public void setSelectionEnd(int index) {
-        int i = getText().length();
-        this.selectionEnd = MathHelper.clamp(index, 0, i);
-        super.setSelectionEnd(index);
-    }
-
-    @Override
-    public SelectionType getType() {
-        return super.getType();
+    public void setHighlightPos(int position) {
+        super.setHighlightPos(position);
+        this.selectionEnd = Mth.clamp(position, 0, getValue().length());
     }
 
     /**
      * Sets the text for the text field
      *
-     * @param text Text to set
+     * @param text Component to set
      * @param update Updates the history
      */
     public void setText(String text, boolean update) {
-        // Wrapper class for setText
-        super.setText(text);
+        // Wrapper class for setText -> setValue
+        super.setValue(text);
+        // The EditBox super-constructor calls setValue(...) before this subclass' fields are
+        // initialized; skip history/render bookkeeping until we are fully constructed.
+        if (renderTextProvider == null || history == null) {
+            return;
+        }
         if (update) {
             updateHistory();
         }
         updateRender();
     }
 
-    @Override
     public void setText(String text) {
         setText(text, true);
     }
 
+    @Override
+    public void setValue(String text) {
+        setText(text, true);
+    }
+
     private void updateRender() {
-        OrderedText formatted = renderTextProvider.apply(getText(), 0);
-        renderLines = StyleFormatter.wrapText(textRenderer, getWidth(), new TextBuilder().append(formatted).build());
+        FormattedCharSequence formatted = renderTextProvider.apply(getValue(), 0);
+        renderLines = StyleFormatter.wrapText(textRenderer, getInnerWidth(), new TextBuilder().append(formatted).build());
     }
 
     private void updateHistory() {
@@ -315,12 +336,12 @@ public class AdvancedTextField extends TextFieldWidget {
             historyIndex = -1;
         }
         // Check to see if it should log
-        int dif = getText().length() - lastSaved.length();
-        double sim = TextUtil.similarity(getText(), lastSaved);
+        int dif = getValue().length() - lastSaved.length();
+        double sim = TextUtil.similarity(getValue(), lastSaved);
         if (sim >= .3 && (dif < 5 && dif * -1 < 5) || (sim >= .9)) {
             return;
         }
-        addToHistory(getText());
+        addToHistory(getValue());
     }
 
     private void addToHistory(String text) {
@@ -347,14 +368,14 @@ public class AdvancedTextField extends TextFieldWidget {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent keyEvent) {
         if (!this.isActive()) {
             return false;
         }
-        if (!isUndo(keyCode)) {
-            return super.keyPressed(keyCode, scanCode, modifiers);
+        if (!isUndo(keyEvent)) {
+            return super.keyPressed(keyEvent);
         }
-        if (Screen.hasShiftDown()) {
+        if (keyEvent.hasShiftDown()) {
             redo();
         } else {
             undo();
@@ -363,7 +384,7 @@ public class AdvancedTextField extends TextFieldWidget {
     }
 
     @Override
-    public void appendClickableNarrations(NarrationMessageBuilder builder) {
-        // Crashes here because Text is null
+    public void updateWidgetNarration(NarrationElementOutput builder) {
+        // Crashes here because Component is null
     }
 }

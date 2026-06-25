@@ -4,7 +4,7 @@ import fi.dy.masa.malilib.config.IConfigBase;
 import fi.dy.masa.malilib.util.StringUtils;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 
 import java.util.ArrayList;
 import java.util.List;

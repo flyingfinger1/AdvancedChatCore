@@ -13,7 +13,9 @@ import fi.dy.masa.malilib.gui.widgets.WidgetListBase;
 import fi.dy.masa.malilib.gui.wrappers.TextFieldWrapper;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 
 public abstract class WidgetConfigList<TYPE, WIDGET extends WidgetConfigListEntry<TYPE>>
         extends WidgetListBase<TYPE, WIDGET> {
@@ -44,7 +46,7 @@ public abstract class WidgetConfigList<TYPE, WIDGET extends WidgetConfigListEntr
 
     protected void clearTextFieldFocus() {
         for (TextFieldWrapper<GuiTextFieldGeneric> field : this.textFields) {
-            GuiTextFieldGeneric textField = field.getTextField();
+            GuiTextFieldGeneric textField = field.textField();
 
             if (textField.isFocused()) {
                 textField.setFocused(false);
@@ -54,18 +56,18 @@ public abstract class WidgetConfigList<TYPE, WIDGET extends WidgetConfigListEntr
     }
 
     @Override
-    public boolean onMouseClicked(int mouseX, int mouseY, int mouseButton) {
+    public boolean onMouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
         clearTextFieldFocus();
-        return super.onMouseClicked(mouseX, mouseY, mouseButton);
+        return super.onMouseClicked(mouseButtonEvent, doubleClick);
     }
 
     @Override
-    public boolean onKeyTyped(int keyCode, int scanCode, int modifiers) {
+    public boolean onKeyTyped(KeyEvent keyEvent) {
         for (WidgetConfigListEntry<TYPE> widget : this.listWidgets) {
-            if (widget.onKeyTyped(keyCode, scanCode, modifiers)) {
+            if (widget.onKeyTyped(keyEvent)) {
                 return true;
             }
         }
-        return super.onKeyTyped(keyCode, scanCode, modifiers);
+        return super.onKeyTyped(keyEvent);
     }
 }

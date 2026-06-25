@@ -9,12 +9,12 @@ package io.github.darkkronicle.advancedchatcore.finder;
 
 import io.github.darkkronicle.advancedchatcore.AdvancedChatCore;
 import io.github.darkkronicle.advancedchatcore.util.*;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.Formatting;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.ChatFormatting;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -34,7 +34,7 @@ public class RegexFinder extends PatternFinder {
     }
 
     @Override
-    public List<StringMatch> getMatches(Text input, String toMatch) {
+    public List<StringMatch> getMatches(Component input, String toMatch) {
         // Find named groups
         Optional<List<StringMatch>> optionalGroups = SearchUtils.findMatches(toMatch, "\\(\\?<([a-zA-Z][a-zA-Z0-9]*)>", FindType.REGEX);
         if (optionalGroups.isEmpty()) {
@@ -80,7 +80,7 @@ public class RegexFinder extends PatternFinder {
         return matches;
     }
 
-    public static boolean isAllowed(Text input, String group, Matcher matcher) {
+    public static boolean isAllowed(Component input, String group, Matcher matcher) {
         group = group.toLowerCase(Locale.ROOT);
         String groupText = matcher.group(group);
         String groupCondition = group.substring(3);
@@ -92,7 +92,7 @@ public class RegexFinder extends PatternFinder {
         if (groupCondition.startsWith("0")) {
             groupCondition = groupCondition.substring(1);
             while (groupCondition.length() != 0) {
-                MutableText truncated = TextUtil.truncate(input, new StringMatch("", start, end));
+                MutableComponent truncated = TextUtil.truncate(input, new StringMatch("", start, end));
                 char val = groupCondition.charAt(0);
                 groupCondition = groupCondition.substring(1);
                 if (val == 'l') {
@@ -127,8 +127,8 @@ public class RegexFinder extends PatternFinder {
                 }
                 if (val == 'z') {
                     if (!TextUtil.styleChanges(
-                            truncated, (style1, style2) -> style1.getClickEvent() != null && style1.getClickEvent().getAction() == ClickEvent.Action.OPEN_URL
-                                    && style2.getClickEvent() != null && style2.getClickEvent().getAction() == ClickEvent.Action.OPEN_URL)
+                            truncated, (style1, style2) -> style1.getClickEvent() != null && style1.getClickEvent().action() == ClickEvent.Action.OPEN_URL
+                                    && style2.getClickEvent() != null && style2.getClickEvent().action() == ClickEvent.Action.OPEN_URL)
                     ) {
                         return true;
                     }
@@ -136,8 +136,8 @@ public class RegexFinder extends PatternFinder {
                 }
                 if (val == 'x') {
                     if (!TextUtil.styleChanges(
-                            truncated, (style1, style2) -> style1.getClickEvent() != null && style1.getClickEvent().getAction() == ClickEvent.Action.COPY_TO_CLIPBOARD
-                                    && style2.getClickEvent() != null && style2.getClickEvent().getAction() == ClickEvent.Action.COPY_TO_CLIPBOARD)
+                            truncated, (style1, style2) -> style1.getClickEvent() != null && style1.getClickEvent().action() == ClickEvent.Action.COPY_TO_CLIPBOARD
+                                    && style2.getClickEvent() != null && style2.getClickEvent().action() == ClickEvent.Action.COPY_TO_CLIPBOARD)
                     ) {
                         return true;
                     }
@@ -145,8 +145,8 @@ public class RegexFinder extends PatternFinder {
                 }
                 if (val == 'y') {
                     if (!TextUtil.styleChanges(
-                            truncated, (style1, style2) -> style1.getClickEvent() != null && style1.getClickEvent().getAction() == ClickEvent.Action.OPEN_FILE
-                                    && style2.getClickEvent() != null && style2.getClickEvent().getAction() == ClickEvent.Action.OPEN_FILE)
+                            truncated, (style1, style2) -> style1.getClickEvent() != null && style1.getClickEvent().action() == ClickEvent.Action.OPEN_FILE
+                                    && style2.getClickEvent() != null && style2.getClickEvent().action() == ClickEvent.Action.OPEN_FILE)
                     ) {
                         return true;
                     }
@@ -154,8 +154,8 @@ public class RegexFinder extends PatternFinder {
                 }
                 if (val == 'w') {
                     if (!TextUtil.styleChanges(
-                            truncated, (style1, style2) -> style1.getClickEvent() != null && style1.getClickEvent().getAction() == ClickEvent.Action.RUN_COMMAND
-                                    && style2.getClickEvent() != null && style2.getClickEvent().getAction() == ClickEvent.Action.RUN_COMMAND)
+                            truncated, (style1, style2) -> style1.getClickEvent() != null && style1.getClickEvent().action() == ClickEvent.Action.RUN_COMMAND
+                                    && style2.getClickEvent() != null && style2.getClickEvent().action() == ClickEvent.Action.RUN_COMMAND)
                     ) {
                         return true;
                     }
@@ -163,8 +163,8 @@ public class RegexFinder extends PatternFinder {
                 }
                 if (val == 'v') {
                     if (!TextUtil.styleChanges(
-                            truncated, (style1, style2) -> style1.getClickEvent() != null && style1.getClickEvent().getAction() == ClickEvent.Action.SUGGEST_COMMAND
-                                    && style2.getClickEvent() != null && style2.getClickEvent().getAction() == ClickEvent.Action.SUGGEST_COMMAND)
+                            truncated, (style1, style2) -> style1.getClickEvent() != null && style1.getClickEvent().action() == ClickEvent.Action.SUGGEST_COMMAND
+                                    && style2.getClickEvent() != null && style2.getClickEvent().action() == ClickEvent.Action.SUGGEST_COMMAND)
                     ) {
                         return true;
                     }
@@ -190,11 +190,17 @@ public class RegexFinder extends PatternFinder {
                     }
                     continue;
                 }
-                Formatting formatting = Formatting.byCode(val);
-                if (formatting == null || !formatting.isColor()) {
+                ChatFormatting formatting = ChatFormatting.getByCode(val);
+                if (formatting == null) {
                     continue;
                 }
-                if (color.getRgb() == formatting.getColorValue()) {
+                // 26.2: ChatFormatting lost isColor()/getColorValue(); TextColor.fromLegacyFormat
+                // returns null for non-color codes and the matching TextColor otherwise.
+                TextColor formattingColor = TextColor.fromLegacyFormat(formatting);
+                if (formattingColor == null) {
+                    continue;
+                }
+                if (color.getValue() == formattingColor.getValue()) {
                     return true;
                 }
             }

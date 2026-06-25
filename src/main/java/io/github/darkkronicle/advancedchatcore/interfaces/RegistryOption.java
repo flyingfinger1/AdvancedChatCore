@@ -10,7 +10,7 @@ package io.github.darkkronicle.advancedchatcore.interfaces;
 import io.github.darkkronicle.advancedchatcore.util.AbstractRegistry;
 import java.util.List;
 import java.util.function.Supplier;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 
 /**
  * An interface to get a RegistryOption that can be saved/configured in game.

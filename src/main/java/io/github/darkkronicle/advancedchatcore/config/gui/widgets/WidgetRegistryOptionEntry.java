@@ -7,7 +7,6 @@
  */
 package io.github.darkkronicle.advancedchatcore.config.gui.widgets;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.button.ButtonBase;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
@@ -21,8 +20,8 @@ import io.github.darkkronicle.advancedchatcore.util.Colors;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.gui.screens.Screen;
+import fi.dy.masa.malilib.render.GuiContext;
 
 @Environment(EnvType.CLIENT)
 public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
@@ -75,12 +74,11 @@ public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
     }
 
     @Override
-    public void render(int mouseX, int mouseY, boolean selected, MatrixStack matrixStack) {
-        RenderUtils.color(1f, 1f, 1f, 1f);
-
+    public void render(GuiContext ctx, int mouseX, int mouseY, boolean selected) {
         // Draw a lighter background for the hovered and the selected entry
         if (selected || this.isMouseOver(mouseX, mouseY)) {
             RenderUtils.drawRect(
+                    ctx,
                     this.x,
                     this.y,
                     this.width,
@@ -88,6 +86,7 @@ public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
                     Colors.getInstance().getColorOrWhite("white").withAlpha(150).color());
         } else if (this.isOdd) {
             RenderUtils.drawRect(
+                    ctx,
                     this.x,
                     this.y,
                     this.width,
@@ -95,6 +94,7 @@ public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
                     Colors.getInstance().getColorOrWhite("white").withAlpha(70).color());
         } else {
             RenderUtils.drawRect(
+                    ctx,
                     this.x,
                     this.y,
                     this.width,
@@ -103,24 +103,19 @@ public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
         }
         String name = this.option.getDisplayName();
         this.drawString(
+                ctx,
                 this.x + 4,
                 this.y + 7,
                 Colors.getInstance().getColorOrWhite("white").color(),
-                name,
-                matrixStack);
+                name);
 
-        RenderUtils.color(1f, 1f, 1f, 1f);
-        RenderSystem.disableBlend();
-
-        super.render(mouseX, mouseY, selected, matrixStack);
-
-        RenderUtils.disableDiffuseLighting();
+        super.render(ctx, mouseX, mouseY, selected);
     }
 
     @Override
     public void postRenderHovered(
-            int mouseX, int mouseY, boolean selected, MatrixStack matrixStack) {
-        super.postRenderHovered(mouseX, mouseY, selected, matrixStack);
+            GuiContext ctx, int mouseX, int mouseY, boolean selected) {
+        super.postRenderHovered(ctx, mouseX, mouseY, selected);
 
         if (hoverLines == null) {
             return;
@@ -129,7 +124,7 @@ public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
                 && mouseX < this.buttonStartX
                 && mouseY >= this.y
                 && mouseY <= this.y + this.height) {
-            RenderUtils.drawHoverText(mouseX, mouseY, this.hoverLines, matrixStack);
+            RenderUtils.drawHoverText(ctx, mouseX, mouseY, this.hoverLines);
         }
     }
 

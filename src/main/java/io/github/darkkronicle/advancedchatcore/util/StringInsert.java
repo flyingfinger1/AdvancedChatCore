@@ -1,19 +1,19 @@
 package io.github.darkkronicle.advancedchatcore.util;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
 
 /**
  * An interface to provide a way to get the text that should be replaced based off of the
- * current {@link Text} and the current {@link StringMatch}
+ * current {@link Component} and the current {@link StringMatch}
  */
 public interface StringInsert {
     /**
-     * Return's the {@link MutableText} that should be inserted.
+     * Return's the {@link MutableComponent} that should be inserted.
      *
-     * @param current The current {@link Text}
+     * @param current The current {@link Component}
      * @param match The current {@link StringMatch}
      * @return
      */
-    MutableText getText(Text current, StringMatch match);
+    MutableComponent getText(Component current, StringMatch match);
 }

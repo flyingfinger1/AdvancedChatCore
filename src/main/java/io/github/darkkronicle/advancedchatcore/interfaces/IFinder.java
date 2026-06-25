@@ -8,7 +8,7 @@
 package io.github.darkkronicle.advancedchatcore.interfaces;
 
 import io.github.darkkronicle.advancedchatcore.util.StringMatch;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 import java.util.List;
 
@@ -16,13 +16,13 @@ public interface IFinder {
 
     boolean isMatch(String input, String toMatch);
 
-    default boolean isMatch(Text input, String toMatch) {
+    default boolean isMatch(Component input, String toMatch) {
         return isMatch(input.getString(), toMatch);
     }
 
     List<StringMatch> getMatches(String input, String toMatch);
 
-    default List<StringMatch> getMatches(Text input, String toMatch) {
+    default List<StringMatch> getMatches(Component input, String toMatch) {
         return getMatches(input.getString(), toMatch);
     }
 }

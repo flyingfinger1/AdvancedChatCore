@@ -23,7 +23,6 @@ import net.fabricmc.api.Environment;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.logging.log4j.Level;
 
 /**
  * https://gist.github.com/PimDeWitte/c04cc17bc5fa9d7e3aee6670d4105941
@@ -48,7 +47,6 @@ public class ProfanityUtil {
         try {
             List<String> lines;
             File file = FileUtils.getConfigDirectory()
-                    .toPath()
                     .resolve("advancedchat")
                     .resolve("swear_words.csv")
                     .toFile();
@@ -77,14 +75,16 @@ public class ProfanityUtil {
                     words.get(severity).add(word);
 
                 } catch (Exception e) {
-                    AdvancedChatCore.LOGGER.log(
-                            Level.ERROR, "Error while initializing profanity words", e);
+                    AdvancedChatCore.LOGGER.error("Error while initializing profanity words", e);
                 }
             }
-            AdvancedChatCore.LOGGER.log(
-                    Level.INFO, "Loaded " + counter + " words to profanity filter.");
-        } catch (URISyntaxException | IOException  e) {
-            AdvancedChatCore.LOGGER.log(Level.ERROR, "Error loading swear_words.csv", e);
+            AdvancedChatCore.LOGGER.info("Loaded " + counter + " words to profanity filter.");
+        } catch (URISyntaxException | IOException e) {
+            // The profanity word list is optional: it is loaded from
+            // config/advancedchat/swear_words.csv if present, and there is no bundled default.
+            // Its absence simply leaves the profanity filter inactive, so log quietly.
+            AdvancedChatCore.LOGGER.info(
+                    "No swear_words.csv found; profanity filter inactive ({})", e.getMessage());
         }
     }
 

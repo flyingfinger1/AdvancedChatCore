@@ -7,15 +7,16 @@
  */
 package io.github.darkkronicle.advancedchatcore.util;
 
+import net.minecraft.util.FormattedCharSequence;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.util.ChatMessages;
-import net.minecraft.text.*;
-import net.minecraft.util.Formatting;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.ComponentRenderUtils;
+import net.minecraft.network.chat.*;
+import net.minecraft.ChatFormatting;
 import net.minecraft.util.Unit;
 
 /** Class to format text without losing data */
@@ -24,7 +25,7 @@ public class StyleFormatter {
 
     /**
      * An interface to take multiple inputs from a string that has the Section Symbol formatting
-     * combined with standard {@link Text} formatting.
+     * combined with standard {@link Component} formatting.
      */
     public interface FormattingVisitable {
         /**
@@ -101,13 +102,13 @@ public class StyleFormatter {
                 if (currentStyle.equals(Style.EMPTY) || currentStyle.equals(textStyle)) {
                     // If it's empty or different rely on just the current text style
                     // Arbitrary color
-                    currentStyle = textStyle.withExclusiveFormatting(Formatting.BLACK);
+                    currentStyle = textStyle.applyLegacyFormat(ChatFormatting.BLACK);
                 } else {
                     // Styles are different so we take what happened before. This allows us to chain
                     // formatting symbols.
 
                     // Arbitrary color to reset
-                    currentStyle = currentStyle.withExclusiveFormatting(Formatting.BLACK);
+                    currentStyle = currentStyle.applyLegacyFormat(ChatFormatting.BLACK);
                 }
                 currentStyle = currentStyle.withColor(color);
                 currentIndex += 7;
@@ -115,19 +116,19 @@ public class StyleFormatter {
             }
             return Result.INCREMENT;
         }
-        Formatting formatting = Formatting.byCode(nextChar);
+        ChatFormatting formatting = ChatFormatting.getByCode(nextChar);
         if (formatting != null) {
-            if (formatting == Formatting.RESET) {
+            if (formatting == ChatFormatting.RESET) {
                 // If it resets, just go to what the current text is.
                 currentStyle = textStyle;
             } else {
                 if (currentStyle.equals(Style.EMPTY) || currentStyle.equals(textStyle)) {
                     // If it's empty or different rely on just the current text style
-                    currentStyle = textStyle.withExclusiveFormatting(formatting);
+                    currentStyle = textStyle.applyLegacyFormat(formatting);
                 } else {
                     // Styles are different so we take what happened before. This allows us to chain
                     // formatting symbols.
-                    currentStyle = currentStyle.withExclusiveFormatting(formatting);
+                    currentStyle = currentStyle.applyLegacyFormat(formatting);
                 }
             }
             if (currentStyle.equals(Style.EMPTY)) {
@@ -166,7 +167,7 @@ public class StyleFormatter {
                     case SKIP:
                         return Optional.empty();
                     case TERMINATE:
-                        return Optional.of(StringVisitable.TERMINATE_VISIT);
+                        return Optional.of(FormattedText.STOP_ITERATION);
                     case INCREMENT:
                         i++;
                 }
@@ -174,7 +175,7 @@ public class StyleFormatter {
             } else if (sendToVisitor(c, textStyle)) {
                 realIndex++;
             } else {
-                return Optional.of(StringVisitable.TERMINATE_VISIT);
+                return Optional.of(FormattedText.STOP_ITERATION);
             }
             currentIndex++;
         }
@@ -188,16 +189,16 @@ public class StyleFormatter {
      * <p>This method is used to remove section symbols while maintaining previous formatting as
      * well as new formatting.
      *
-     * @param text Text to reformat
+     * @param text Component to reformat
      * @return Formatted text
      */
-    public static MutableText formatText(Text text) {
-        MutableText t = Text.empty();
+    public static MutableComponent formatText(Component text) {
+        MutableComponent t = Component.empty();
         int length = text.getString().length();
         StyleFormatter formatter =
                 new StyleFormatter(
                         (c, index, formattedIndex, style, formattedStyle) -> {
-                            t.append(Text.literal(String.valueOf(c)).fillStyle(formattedStyle));
+                            t.append(Component.literal(String.valueOf(c)).withStyle(formattedStyle));
                             return true;
                         },
                         length);
@@ -205,22 +206,22 @@ public class StyleFormatter {
         return flattenText(t);
     }
 
-    public static MutableText flattenText(Text text) {
-        List<Text> newSiblings = new ArrayList<>();
+    public static MutableComponent flattenText(Component text) {
+        List<Component> newSiblings = new ArrayList<>();
         Style last = text.getStyle();
-        StringBuilder content = new StringBuilder(TextUtil.getContent(text.getContent()));
-        for (Text t : text.getSiblings()) {
+        StringBuilder content = new StringBuilder(TextUtil.getContent(text.getContents()));
+        for (Component t : text.getSiblings()) {
             if (t.getStyle().equals(last)) {
-                content.append(TextUtil.getContent(t.getContent()));
+                content.append(TextUtil.getContent(t.getContents()));
                 continue;
             }
-            newSiblings.add(Text.literal(content.toString()).fillStyle(last));
-            content = new StringBuilder(TextUtil.getContent(t.getContent()));
+            newSiblings.add(Component.literal(content.toString()).withStyle(last));
+            content = new StringBuilder(TextUtil.getContent(t.getContents()));
             last = t.getStyle();
         }
-        newSiblings.add(Text.literal(content.toString()).fillStyle(last));
-        MutableText newText = Text.empty();
-        for (Text sibling : newSiblings) {
+        newSiblings.add(Component.literal(content.toString()).withStyle(last));
+        MutableComponent newText = Component.empty();
+        for (Component sibling : newSiblings) {
             newText.append(sibling);
         }
         return newText;
@@ -229,14 +230,14 @@ public class StyleFormatter {
     /**
      * Wraps text into multiple lines
      *
-     * @param textRenderer TextRenderer to handle text
+     * @param textRenderer Font to handle text
      * @param scaledWidth Maximum width before the line breaks
-     * @param text Text to break up
-     * @return List of MutableText of the new lines
+     * @param text Component to break up
+     * @return List of MutableComponent of the new lines
      */
-    public static List<Text> wrapText(TextRenderer textRenderer, int scaledWidth, Text text) {
-        ArrayList<Text> lines = new ArrayList<>();
-        for (OrderedText breakRenderedChatMessageLine : ChatMessages.breakRenderedChatMessageLines(text, scaledWidth, textRenderer)) {
+    public static List<Component> wrapText(Font textRenderer, int scaledWidth, Component text) {
+        ArrayList<Component> lines = new ArrayList<>();
+        for (FormattedCharSequence breakRenderedChatMessageLine : ComponentRenderUtils.wrapComponents(text, scaledWidth, textRenderer)) {
             lines.add(new TextBuilder().append(breakRenderedChatMessageLine).build());
         }
         return lines;

@@ -40,7 +40,7 @@ public class ConfigColor extends fi.dy.masa.malilib.config.options.ConfigColor {
         if (defaultReference != null) {
             this.setValueFromString(defaultReference);
         } else {
-            this.setValueFromString(new Color(defaultValue).getString());
+            this.setValueFromString(new Color(getDefaultIntegerValue()).getString());
         }
         onValueChanged();
     }
@@ -91,17 +91,16 @@ public class ConfigColor extends fi.dy.masa.malilib.config.options.ConfigColor {
                     this.setColor();
                     return;
                 }
-                this.value = this.getClampedValue(StringUtils.getColor(value, 0));
-                this.setIntegerValue(this.value);
+                this.setIntegerValue(this.getClampedValue(StringUtils.getColor(value, 0)));
                 this.setColor();
             } else {
-                MaLiLib.logger.warn(
+                MaLiLib.LOGGER.warn(
                         "Failed to set config value for '{}' from the JSON element '{}'",
                         this.getName(),
                         element);
             }
         } catch (Exception e) {
-            MaLiLib.logger.warn(
+            MaLiLib.LOGGER.warn(
                     "Failed to set config value for '{}' from the JSON element '{}'",
                     this.getName(),
                     element,

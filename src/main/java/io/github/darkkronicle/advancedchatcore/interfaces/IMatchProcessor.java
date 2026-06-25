@@ -8,7 +8,7 @@
 package io.github.darkkronicle.advancedchatcore.interfaces;
 
 import io.github.darkkronicle.advancedchatcore.util.SearchResult;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -43,7 +43,7 @@ public interface IMatchProcessor extends IMessageProcessor {
     }
 
     @Override
-    default boolean process(Text text, Text unfiltered) {
+    default boolean process(Component text, Component unfiltered) {
         return processMatches(text, unfiltered, null).success;
     }
 
@@ -56,7 +56,7 @@ public interface IMatchProcessor extends IMessageProcessor {
      * @return The {@link Result} that the method performed
      */
     Result processMatches(
-            Text text, @Nullable Text unfiltered, @Nullable SearchResult search);
+            Component text, @Nullable Component unfiltered, @Nullable SearchResult search);
 
     /**
      * Whether or not this processor should only trigger when matches are present. If false {@link

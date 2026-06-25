@@ -13,7 +13,7 @@ import io.github.darkkronicle.advancedchatcore.interfaces.ConfigRegistryOption;
 import io.github.darkkronicle.advancedchatcore.util.AbstractRegistry;
 import java.util.Collection;
 import java.util.stream.Collectors;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import org.jetbrains.annotations.Nullable;
 
 public class WidgetListRegistryOption<T extends ConfigRegistryOption<?>>

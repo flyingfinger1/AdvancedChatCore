@@ -20,7 +20,7 @@ import fi.dy.masa.malilib.config.options.*;
 import fi.dy.masa.malilib.hotkeys.KeyAction;
 import fi.dy.masa.malilib.hotkeys.KeybindSettings;
 import fi.dy.masa.malilib.util.FileUtils;
-import fi.dy.masa.malilib.util.JsonUtils;
+import fi.dy.masa.malilib.util.data.json.JsonUtils;
 import fi.dy.masa.malilib.util.StringUtils;
 import io.github.darkkronicle.advancedchatcore.AdvancedChatCore;
 import io.github.darkkronicle.advancedchatcore.config.options.ConfigColor;
@@ -258,11 +258,10 @@ public class ConfigStorage implements IConfigHandler {
     }
 
     public static void loadFromFile() {
-        File v3 = FileUtils.getConfigDirectory().toPath().resolve(CONFIG_FILE_NAME).toFile();
+        File v3 = FileUtils.getConfigDirectory().resolve(CONFIG_FILE_NAME).toFile();
         File configFile;
         if (v3.exists()
                 && !FileUtils.getConfigDirectory()
-                        .toPath()
                         .resolve("advancedchat")
                         .resolve(CONFIG_FILE_NAME)
                         .toFile()
@@ -271,7 +270,6 @@ public class ConfigStorage implements IConfigHandler {
         } else {
             configFile =
                     FileUtils.getConfigDirectory()
-                            .toPath()
                             .resolve("advancedchat")
                             .resolve(CONFIG_FILE_NAME)
                             .toFile();
@@ -327,7 +325,7 @@ public class ConfigStorage implements IConfigHandler {
     }
 
     public static void saveFromFile() {
-        File dir = FileUtils.getConfigDirectory().toPath().resolve("advancedchat").toFile();
+        File dir = FileUtils.getConfigDirectory().resolve("advancedchat").toFile();
 
         if ((dir.exists() && dir.isDirectory()) || dir.mkdirs()) {
             JsonObject root = new JsonObject();
@@ -361,33 +359,17 @@ public class ConfigStorage implements IConfigHandler {
         if (file != null && file.exists() && file.isFile() && file.canRead()) {
             String fileName = file.getAbsolutePath();
 
-            try {
-                JsonParser parser = new JsonParser();
-                Charset[] sets =
-                        new Charset[] {
-                            StandardCharsets.UTF_8, Charset.defaultCharset(),
-                        };
-                // Start to enforce UTF 8. Old files may be UTF-16
-                for (Charset s : sets) {
-                    JsonElement element;
-                    InputStreamReader reader = new InputStreamReader(new FileInputStream(file), s);
-                    try {
-                        element = parser.parse(reader);
-                    } catch (Exception e) {
-                        reader.close();
-                        MaLiLib.logger.error(
-                                "Failed to parse the JSON file '{}'. Attempting different charset."
-                                        + " ",
-                                fileName,
-                                e);
-                        continue;
-                    }
-                    reader.close();
-
-                    return element;
+            // Start to enforce UTF-8. Old files may be UTF-16.
+            Charset[] sets = new Charset[] {StandardCharsets.UTF_8, Charset.defaultCharset()};
+            for (Charset s : sets) {
+                try (InputStreamReader reader = new InputStreamReader(new FileInputStream(file), s)) {
+                    return JsonParser.parseReader(reader);
+                } catch (Exception e) {
+                    MaLiLib.LOGGER.error(
+                            "Failed to parse the JSON file '{}'. Attempting different charset. ",
+                            fileName,
+                            e);
                 }
-            } catch (Exception e) {
-                MaLiLib.logger.error("Failed to parse the JSON file '{}'", fileName, e);
             }
         }
 
@@ -396,25 +378,13 @@ public class ConfigStorage implements IConfigHandler {
 
     // WINDOWS BAD AND MINECRAFT LIKES UTF-16
     public static boolean writeJsonToFile(JsonObject root, File file) {
-        OutputStreamWriter writer = null;
-
-        try {
-            writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
+        try (OutputStreamWriter writer =
+                new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
             writer.write(JsonUtils.GSON.toJson(root));
-            writer.close();
-
             return true;
         } catch (IOException e) {
-            MaLiLib.logger.warn(
+            MaLiLib.LOGGER.warn(
                     "Failed to write JSON data to file '{}'", file.getAbsolutePath(), e);
-        } finally {
-            try {
-                if (writer != null) {
-                    writer.close();
-                }
-            } catch (Exception e) {
-                MaLiLib.logger.warn("Failed to close JSON file", e);
-            }
         }
 
         return false;

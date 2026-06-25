@@ -7,6 +7,7 @@
  */
 package io.github.darkkronicle.advancedchatcore.chat;
 
+import io.github.darkkronicle.advancedchatcore.AdvancedChatCore;
 import io.github.darkkronicle.advancedchatcore.interfaces.IMessageFilter;
 import io.github.darkkronicle.advancedchatcore.interfaces.IMessageProcessor;
 import io.github.darkkronicle.advancedchatcore.util.FindType;
@@ -16,18 +17,18 @@ import io.github.darkkronicle.advancedchatcore.util.StringInsert;
 import io.github.darkkronicle.advancedchatcore.util.StringMatch;
 import io.github.darkkronicle.advancedchatcore.util.StyleFormatter;
 import io.github.darkkronicle.advancedchatcore.util.TextUtil;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.hud.MessageIndicator;
-import net.minecraft.network.message.MessageSignatureData;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import org.apache.logging.log4j.LogManager;
+import net.minecraft.client.multiplayer.chat.GuiMessageTag;
+import net.minecraft.network.chat.MessageSignature;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -76,9 +77,9 @@ public class MessageDispatcher {
                                         url = "https://" + url;
                                     }
                                     if (current.getStyle().getClickEvent() == null) {
-                                        return Text.literal(match1.match).fillStyle(current.getStyle().withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url)));
+                                        return Component.literal(match1.match).withStyle(current.getStyle().withClickEvent(new ClickEvent.OpenUrl(URI.create(url))));
                                     }
-                                    return MutableText.of(current.getContent()).fillStyle(current.getStyle());
+                                    return MutableComponent.create(current.getContents()).withStyle(current.getStyle());
                                 });
                     }
                     text = TextUtil.replaceStrings(text, insert);
@@ -88,7 +89,7 @@ public class MessageDispatcher {
         registerPreFilter(
                 (IMessageProcessor)
                         (text, orig) -> {
-                            LogManager.getLogger()
+                            AdvancedChatCore.LOGGER
                                     .info(
                                             "[CHAT] {}",
                                             text.getString()
@@ -103,12 +104,12 @@ public class MessageDispatcher {
      * This is ONLY used for new messages in chat
      *
      * <p>Note: It is not recommended to call this method to force add new text. Typically, grabbing
-     * the {@link net.minecraft.client.gui.hud.ChatHud} from {@link
-     * net.minecraft.client.MinecraftClient} and calling addText is a safer way.
+     * the {@link net.minecraft.client.gui.hud.ChatComponent} from {@link
+     * net.minecraft.client.Minecraft} and calling addText is a safer way.
      *
-     * @param text Text that is received
+     * @param text Component that is received
      */
-    public void handleText(Text text, @Nullable MessageSignatureData signature, @Nullable MessageIndicator indicator) {
+    public void handleText(Component text, @Nullable MessageSignature signature, @Nullable GuiMessageTag indicator) {
         boolean previouslyBlank = text.getString().length() == 0;
         text = preFilter(text, signature, indicator);
         if (text.getString().length() == 0 && !previouslyBlank) {
@@ -118,9 +119,9 @@ public class MessageDispatcher {
         process(text, signature, indicator);
     }
 
-    private Text preFilter(Text text, @Nullable MessageSignatureData signature, @Nullable MessageIndicator indicator) {
+    private Component preFilter(Component text, @Nullable MessageSignature signature, @Nullable GuiMessageTag indicator) {
         for (IMessageFilter f : preFilters) {
-            Optional<Text> t = f.filter(text);
+            Optional<Component> t = f.filter(text);
             if (t.isPresent()) {
                 text = t.get();
             }
@@ -128,7 +129,7 @@ public class MessageDispatcher {
         return text;
     }
 
-    private void process(Text text, @Nullable MessageSignatureData signature, @Nullable MessageIndicator indicator) {
+    private void process(Component text, @Nullable MessageSignature signature, @Nullable GuiMessageTag indicator) {
         for (IMessageFilter f : processors) {
             f.filter(text);
         }

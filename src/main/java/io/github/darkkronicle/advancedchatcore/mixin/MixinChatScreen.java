@@ -9,8 +9,8 @@ package io.github.darkkronicle.advancedchatcore.mixin;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,8 +20,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ChatScreen.class)
 public class MixinChatScreen {
 
-    @Inject(method = "addScreenNarrations", at = @At("HEAD"), cancellable = true)
-    public void screenNarrations(NarrationMessageBuilder builder, CallbackInfo ci) {
+    // 26.2: Yarn Screen.addScreenNarrations(NarrationMessageBuilder) is now
+    // Screen.updateNarrationState(NarrationElementOutput).
+    @Inject(method = "updateNarrationState", at = @At("HEAD"), cancellable = true)
+    public void screenNarrations(NarrationElementOutput builder, CallbackInfo ci) {
         // Don't cause random narrations to happen/crashes
         ci.cancel();
     }

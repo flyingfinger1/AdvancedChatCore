@@ -10,20 +10,24 @@ package io.github.darkkronicle.advancedchatcore.mixin;
 import io.github.darkkronicle.advancedchatcore.chat.ChatHistory;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Keyboard;
+import net.minecraft.client.KeyboardHandler;
+import net.minecraft.client.input.KeyEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
-@Mixin(Keyboard.class)
+@Mixin(KeyboardHandler.class)
 public class MixinKeyboard {
 
+    // 26.2: Yarn Keyboard.processF3(int) is gone; the F3+D "clear chat" path now lives in
+    // KeyboardHandler.handleDebugKeys(KeyEvent), which calls
+    // ChatComponent.clearMessages(Z) (was ChatHud.clear(Z)).
     @Inject(
-            method = "processF3",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/hud/ChatHud;clear(Z)V"))
-    public void processF3Chat(int key, CallbackInfoReturnable<Boolean> ci) {
+            method = "handleDebugKeys",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/components/ChatComponent;clearMessages(Z)V"))
+    public void processF3Chat(KeyEvent key, CallbackInfoReturnable<Boolean> ci) {
         // Make it so that history can still be cleared
         ChatHistory.getInstance().clearAll();
     }

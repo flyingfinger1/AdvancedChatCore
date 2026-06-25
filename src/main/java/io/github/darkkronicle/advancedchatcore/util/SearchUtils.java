@@ -21,9 +21,9 @@ import java.util.TreeSet;
 import lombok.experimental.UtilityClass;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.text.Text;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.chat.Component;
 
 /**
  * A class used for helping filters find matches and act on them. Helps with Regular Expressions and
@@ -61,7 +61,7 @@ public class SearchUtils {
      * @param type How toMatch should be interpreted.
      * @return If a match is found.
      */
-    public boolean isMatch(Text input, String toMatch, FindType type) {
+    public boolean isMatch(Component input, String toMatch, FindType type) {
         IFinder finder = type.getFinder();
         if (finder == null) {
             return false;
@@ -125,15 +125,15 @@ public class SearchUtils {
     }
 
     /**
-     * Method to find all matches within a text. Is similar to {@link #isMatch(Text, String,
+     * Method to find all matches within a text. Is similar to {@link #isMatch(Component, String,
      * FindType)}}. This method just finds every match and returns it.
      *
-     * @param input Text to search.
+     * @param input Component to search.
      * @param toMatch Expression to find.
      * @param type How toMatch should be interpreted.
      * @return An Optional containing a list of {@link StringMatch}
      */
-    public Optional<List<StringMatch>> findMatches(Text input, String toMatch, FindType type) {
+    public Optional<List<StringMatch>> findMatches(Component input, String toMatch, FindType type) {
         IFinder finder = type.getFinder();
         if (finder == null) {
             return Optional.empty();
@@ -175,7 +175,7 @@ public class SearchUtils {
      * @param type {@link FindType} way to search
      * @return Optional of a {@link StringMatch} if found
      */
-    public Optional<StringMatch> getMatch(Text input, String toMatch, FindType type) {
+    public Optional<StringMatch> getMatch(Component input, String toMatch, FindType type) {
         IFinder finder = type.getFinder();
         if (finder == null) {
             return Optional.empty();
@@ -193,10 +193,10 @@ public class SearchUtils {
      * Get the author of a message using regex
      *
      * @param networkHandler Network handler to get player data
-     * @param text Text to search
+     * @param text Component to search
      * @return Owner of the message
      */
-    public MessageOwner getAuthor(ClientPlayNetworkHandler networkHandler, String text) {
+    public MessageOwner getAuthor(ClientPacketListener networkHandler, String text) {
         if (networkHandler == null) {
             return null;
         }
@@ -209,17 +209,17 @@ public class SearchUtils {
             return null;
         }
         // Start by just checking names and such
-        PlayerListEntry player = null;
+        PlayerInfo player = null;
         StringMatch match = null;
         for (StringMatch m : words.get()) {
             if (player != null) {
                 break;
             }
-            for (PlayerListEntry e : networkHandler.getPlayerList()) {
+            for (PlayerInfo e : networkHandler.getOnlinePlayers()) {
                 // Easy mode
-                if ((e.getDisplayName() != null
-                                && m.match.equals(stripColorCodes(e.getDisplayName().getString())))
-                        || m.match.equals(e.getProfile().getName())) {
+                if ((e.getTabListDisplayName() != null
+                                && m.match.equals(stripColorCodes(e.getTabListDisplayName().getString())))
+                        || m.match.equals(e.getProfile().name())) {
                     player = e;
                     match = m;
                     break;
@@ -227,13 +227,13 @@ public class SearchUtils {
             }
         }
         // Check for ***everything***
-        HashMap<PlayerListEntry, List<StringMatch>> entryMatches = new HashMap<>();
-        for (PlayerListEntry e : networkHandler.getPlayerList()) {
+        HashMap<PlayerInfo, List<StringMatch>> entryMatches = new HashMap<>();
+        for (PlayerInfo e : networkHandler.getOnlinePlayers()) {
             String name =
                     stripColorCodes(
-                            e.getDisplayName() == null
-                                    ? e.getProfile().getName()
-                                    : e.getDisplayName().getString());
+                            e.getTabListDisplayName() == null
+                                    ? e.getProfile().name()
+                                    : e.getTabListDisplayName().getString());
             Optional<List<StringMatch>> nameWords =
                     SearchUtils.findMatches(
                             name,
@@ -245,7 +245,7 @@ public class SearchUtils {
             entryMatches.put(e, nameWords.get());
         }
         for (StringMatch m : words.get()) {
-            for (Map.Entry<PlayerListEntry, List<StringMatch>> entry : entryMatches.entrySet()) {
+            for (Map.Entry<PlayerInfo, List<StringMatch>> entry : entryMatches.entrySet()) {
                 for (StringMatch nm : entry.getValue()) {
                     if (nm.match.equals(m.match)) {
                         if (player != null && match.start <= m.start) {

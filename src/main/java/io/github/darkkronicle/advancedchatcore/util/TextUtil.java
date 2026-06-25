@@ -12,10 +12,10 @@ import fi.dy.masa.malilib.util.StringUtils;
 import java.util.*;
 import java.util.function.BiFunction;
 import lombok.experimental.UtilityClass;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextContent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentContents;
 
 @UtilityClass
 public class TextUtil {
@@ -41,7 +41,7 @@ public class TextUtil {
         if (longerLength == 0) {
             return 1.0; /* both strings are zero length */
         }
-        /* // If you have Apache Commons Text, you can use it to calculate the edit distance:
+        /* // If you have Apache Commons Component, you can use it to calculate the edit distance:
         LevenshteinDistance levenshteinDistance = new LevenshteinDistance();
         return (longerLength - levenshteinDistance.apply(longer, shorter)) / (double) longerLength; */
         return (longerLength - editDistance(longer, shorter)) / (double) longerLength;
@@ -137,7 +137,7 @@ public class TextUtil {
      *
      * @param matches Map containing a match and a FluidText provider
      */
-    public Text replaceStrings(Text input, Map<StringMatch, StringInsert> matches) {
+    public Component replaceStrings(Component input, Map<StringMatch, StringInsert> matches) {
         // If there's no matches nothing should get replaced.
         if (matches.size() == 0) {
             return input;
@@ -234,17 +234,17 @@ public class TextUtil {
      * Splits off the text that is held by a {@link StringMatch}
      *
      * @param match Match to grab text from
-     * @return MutableText of text
+     * @return MutableComponent of text
      */
-    public static MutableText truncate(Text input, StringMatch match) {
-        ArrayList<Text> newSiblings = new ArrayList<>();
+    public static MutableComponent truncate(Component input, StringMatch match) {
+        ArrayList<Component> newSiblings = new ArrayList<>();
         boolean start = false;
         // Total number of chars went through. Used to find where the match end and beginning is.
         int totalchar = 0;
-        List<Text> siblings = input.getSiblings();
-        siblings.add(0, MutableText.of(input.getContent()).fillStyle(input.getStyle()));
-        for (Text text : siblings) {
-            if (text.getContent() == null || text.getString().length() <= 0) {
+        List<Component> siblings = input.getSiblings();
+        siblings.add(0, MutableComponent.create(input.getContents()).withStyle(input.getStyle()));
+        for (Component text : siblings) {
+            if (text.getContents() == null || text.getString().length() <= 0) {
                 continue;
             }
 
@@ -255,26 +255,26 @@ public class TextUtil {
                 if (totalchar + length >= match.end) {
                     if (!start) {
                         newSiblings.add(
-                                Text.literal(
+                                Component.literal(
                                         text.getString()
                                                 .substring(
                                                         match.start - totalchar,
-                                                        match.end - totalchar)).fillStyle(text.getStyle()));
+                                                        match.end - totalchar)).withStyle(text.getStyle()));
                     } else {
                         newSiblings.add(
-                                Text.literal(
-                                        text.getString().substring(0, match.end - totalchar)).fillStyle(text.getStyle()));
+                                Component.literal(
+                                        text.getString().substring(0, match.end - totalchar)).withStyle(text.getStyle()));
                     }
-                    MutableText newtext = Text.empty();
-                    for (Text sibling : newSiblings) {
+                    MutableComponent newtext = Component.empty();
+                    for (Component sibling : newSiblings) {
                         newtext.append(sibling);
                     }
                     return newtext;
                 } else {
                     if (!start) {
                         newSiblings.add(
-                                Text.literal(
-                                        text.getString().substring(match.start - totalchar)).fillStyle(text.getStyle()));
+                                Component.literal(
+                                        text.getString().substring(match.start - totalchar)).withStyle(text.getStyle()));
                         start = true;
                     } else {
                         newSiblings.add(text);
@@ -286,8 +286,8 @@ public class TextUtil {
         }
 
         // At the end we take the siblings created in this method and return them.
-        MutableText newtext = Text.empty();
-        for (Text sibling : newSiblings) {
+        MutableComponent newtext = Component.empty();
+        for (Component sibling : newSiblings) {
             newtext.append(sibling);
         }
         return newtext;
@@ -295,15 +295,15 @@ public class TextUtil {
 
     /**
      * See's if style changes for specified fluid text
-     * @param text Text to test
+     * @param text Component to test
      * @return If style changes
      */
-    public static boolean styleChanges(Text text) {
+    public static boolean styleChanges(Component text) {
         Style style = null;
         if (text.getSiblings().size() == 1) {
             return false;
         }
-        for (Text raw : text.getSiblings()) {
+        for (Component raw : text.getSiblings()) {
             if (style == null) {
                 style = raw.getStyle();
             } else if (!style.equals(raw.getStyle())) {
@@ -315,16 +315,16 @@ public class TextUtil {
 
     /**
      * See's if style changes for specified fluid text
-     * @param text Text to test
+     * @param text Component to test
      * @param predicate Predicate to see if style has changed enough. Previous, current, different
      * @return If style changes
      */
-    public static boolean styleChanges(Text text, BiFunction<Style, Style, Boolean> predicate) {
+    public static boolean styleChanges(Component text, BiFunction<Style, Style, Boolean> predicate) {
         Style previous = null;
         if (text.getSiblings().size() == 1) {
             return !predicate.apply(text.getSiblings().get(0).getStyle(), text.getSiblings().get(0).getStyle());
         }
-        for (Text raw : text.getSiblings()) {
+        for (Component raw : text.getSiblings()) {
             if (previous == null) {
                 previous = raw.getStyle();
             } else if (!previous.equals(raw.getStyle())) {
@@ -337,7 +337,7 @@ public class TextUtil {
         return false;
     }
 
-    public static String getContent(TextContent content) {
+    public static String getContent(ComponentContents content) {
         StringBuilder builder = new StringBuilder();
         content.visit((s) -> {
             builder.append(s);

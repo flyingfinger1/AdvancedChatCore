@@ -84,7 +84,7 @@ public class AdvancedChatKonstruct {
                 return IntRange.of(1);
             }
         });
-        addVariable("ms", () -> new IntegerObject((int) Util.getMeasuringTimeMs()));
+        addVariable("ms", () -> new IntegerObject((int) Util.getMillis()));
     }
 
     public ParseResult parse(Node node) {

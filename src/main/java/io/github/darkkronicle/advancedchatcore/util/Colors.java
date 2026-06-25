@@ -20,7 +20,6 @@ import java.util.Optional;
 import lombok.Getter;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import org.apache.logging.log4j.Level;
 
 /** A class storing data of colors as defined in colors.toml */
 @Environment(EnvType.CLIENT)
@@ -49,7 +48,6 @@ public class Colors {
 
         // Get file or create if it doesn't exist
         File file = FileUtils.getConfigDirectory()
-                        .toPath()
                         .resolve("advancedchat")
                         .resolve("colors.toml")
                         .toFile();
@@ -58,7 +56,7 @@ public class Colors {
                 org.apache.commons.io.FileUtils.copyInputStreamToFile(AdvancedChatCore.getResource("colors.toml"), file);
             } catch (Exception e) {
                 // Rip
-                AdvancedChatCore.LOGGER.log(Level.ERROR, "Colors could not be loaded correctly!", e);
+                AdvancedChatCore.LOGGER.error("Colors could not be loaded correctly!", e);
                 return;
             }
         }
@@ -106,8 +104,7 @@ public class Colors {
         if (this.palettes.containsKey(defaultPalette)) {
             return this.palettes.get(defaultPalette);
         }
-        AdvancedChatCore.LOGGER.log(
-                Level.WARN, "Default Palette " + defaultPalette + " does not exist!");
+        AdvancedChatCore.LOGGER.warn("Default Palette " + defaultPalette + " does not exist!");
         return this.palettes.values().toArray(new Palette[0])[0];
     }
 
@@ -128,9 +125,7 @@ public class Colors {
     private static Color hexToSimple(String string) {
         if (string.length() != 7 && string.length() != 9) {
             // Not #ffffff (so invalid!)
-            AdvancedChatCore.LOGGER.log(
-                    Level.WARN,
-                    "Color " + string + " isn't formatted correctly! (#ffffff) (#ffffffff)");
+            AdvancedChatCore.LOGGER.warn("Color " + string + " isn't formatted correctly! (#ffffff) (#ffffffff)");
             return new Color(255, 255, 255, 255);
         }
         string = string.substring(1);
@@ -144,8 +139,7 @@ public class Colors {
             }
             return new Color(red, green, blue, alpha);
         } catch (Exception e) {
-            AdvancedChatCore.LOGGER.log(
-                    Level.WARN, "Couldn't convert " + string + " into a color!", e);
+            AdvancedChatCore.LOGGER.warn("Couldn't convert " + string + " into a color!", e);
         }
         return new Color(255, 255, 255, 255);
     }

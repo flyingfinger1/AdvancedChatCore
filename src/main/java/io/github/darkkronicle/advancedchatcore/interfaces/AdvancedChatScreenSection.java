@@ -9,15 +9,19 @@ package io.github.darkkronicle.advancedchatcore.interfaces;
 
 import io.github.darkkronicle.advancedchatcore.chat.AdvancedChatScreen;
 import lombok.Getter;
-import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * A class meant to extend onto the {@link AdvancedChatScreen}
  *
  * <p>This is used so that many modules can add onto the screen without problems occuring.
+ *
+ * <p>26.2: previously implemented vanilla {@code Renderable}; that interface now requires
+ * {@code extractRenderState(GuiGraphicsExtractor, ...)} instead of {@code render(GuiGraphics, ...)}.
+ * Sections are an internal abstraction, not vanilla widgets, so the {@code Renderable} marker was
+ * dropped and the render hook switched to the extraction model.
  */
-public abstract class AdvancedChatScreenSection implements Drawable {
+public abstract class AdvancedChatScreenSection {
 
     /** The {@link AdvancedChatScreen} that is linked to this section */
     @Getter private final AdvancedChatScreen screen;
@@ -119,10 +123,10 @@ public abstract class AdvancedChatScreenSection implements Drawable {
     /**
      * Called when the screen renders.
      *
-     * @param matrixStack MatrixStack
+     * @param guiGraphics GuiGraphicsExtractor for the 26.2 render-state extraction model
      * @param mouseX MouseX
      * @param mouseY MouseY
      * @param partialTicks Partial tick from the last tick
      */
-    public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {}
+    public void render(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {}
 }

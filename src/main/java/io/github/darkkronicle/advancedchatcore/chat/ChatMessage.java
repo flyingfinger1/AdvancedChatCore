@@ -17,10 +17,10 @@ import lombok.Builder;
 import lombok.Data;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.MessageIndicator;
-import net.minecraft.network.message.MessageSignatureData;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.chat.GuiMessageTag;
+import net.minecraft.network.chat.MessageSignature;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 /** A message from chat with data stored within it. */
@@ -32,10 +32,10 @@ public class ChatMessage {
     protected int creationTick;
 
     /** The text that will be displayed on render. */
-    protected Text displayText;
+    protected Component displayText;
 
     /** The unmodified original text. Used to keep time stamp off of. */
-    protected Text originalText;
+    protected Component originalText;
 
     /** ID of the message. */
     protected int id;
@@ -59,17 +59,17 @@ public class ChatMessage {
     protected List<AdvancedChatLine> lines;
 
     @Nullable
-    protected MessageSignatureData signature;
+    protected MessageSignature signature;
 
-    protected MessageIndicator indicator;
+    protected GuiMessageTag indicator;
 
     /**
      * Set's the display text of the message and formats the line breaks.
      *
-     * @param text Text to set to
+     * @param text Component to set to
      * @param width The width that a line break should be enforced
      */
-    public void setDisplayText(Text text, int width) {
+    public void setDisplayText(Component text, int width) {
         this.displayText = text;
         formatChildren(width);
     }
@@ -102,15 +102,15 @@ public class ChatMessage {
     public static class AdvancedChatLine {
 
         /** Render text */
-        private Text text;
+        private Component text;
 
         private final ChatMessage parent;
         private int width;
 
-        private AdvancedChatLine(ChatMessage parent, Text text) {
+        private AdvancedChatLine(ChatMessage parent, Component text) {
             this.parent = parent;
             this.text = text;
-            this.width = MinecraftClient.getInstance().textRenderer.getWidth(text);
+            this.width = Minecraft.getInstance().font.width(text);
         }
 
         @Override
@@ -122,15 +122,15 @@ public class ChatMessage {
     @Builder
     protected ChatMessage(
             int creationTick,
-            Text displayText,
-            Text originalText,
+            Component displayText,
+            Component originalText,
             int id,
             LocalTime time,
             Color backgroundColor,
             int width,
             MessageOwner owner,
-            @Nullable MessageSignatureData signature,
-            @Nullable MessageIndicator indicator) {
+            @Nullable MessageSignature signature,
+            @Nullable GuiMessageTag indicator) {
         this.creationTick = creationTick;
         this.displayText = displayText;
         this.id = id;
@@ -141,7 +141,7 @@ public class ChatMessage {
         this.owner = owner;
         this.originalText = originalText == null ? displayText : originalText;
         this.signature = signature;
-        this.indicator = indicator == null ? MessageIndicator.system() : indicator;
+        this.indicator = indicator == null ? GuiMessageTag.system() : indicator;
         formatChildren(width);
     }
 
@@ -155,9 +155,9 @@ public class ChatMessage {
         if (width == 0) {
             this.lines.add(new AdvancedChatLine(this, displayText));
         } else {
-            for (Text t :
+            for (Component t :
                     StyleFormatter.wrapText(
-                            MinecraftClient.getInstance().textRenderer, width, displayText)) {
+                            Minecraft.getInstance().font, width, displayText)) {
                 this.lines.add(new AdvancedChatLine(this, t));
             }
         }

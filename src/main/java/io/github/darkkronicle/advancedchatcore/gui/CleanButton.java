@@ -15,8 +15,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.Minecraft;
+import fi.dy.masa.malilib.render.GuiContext;
 
 /** A simple button */
 @EqualsAndHashCode(callSuper = false)
@@ -26,7 +26,7 @@ public class CleanButton extends ButtonBase {
 
     protected Color baseColor;
 
-    private MinecraftClient client = MinecraftClient.getInstance();
+    private Minecraft client = Minecraft.getInstance();
 
     /**
      * Constructs a new simple clean button
@@ -36,7 +36,7 @@ public class CleanButton extends ButtonBase {
      * @param width Width
      * @param height Height
      * @param baseColor Color that it should render when not hovered
-     * @param text Text to render
+     * @param text Component to render
      */
     public CleanButton(int x, int y, int width, int height, Color baseColor, String text) {
         super(x, y, width, height, text);
@@ -46,7 +46,7 @@ public class CleanButton extends ButtonBase {
     }
 
     @Override
-    public void render(int mouseX, int mouseY, boolean selected, MatrixStack matrixStack) {
+    public void render(GuiContext ctx, int mouseX, int mouseY, boolean selected) {
         int relMX = mouseX - x;
         int relMY = mouseY - y;
         hovered = relMX >= 0 && relMX <= width && relMY >= 0 && relMY <= height;
@@ -54,12 +54,12 @@ public class CleanButton extends ButtonBase {
         if (hovered) {
             color = Colors.getInstance().getColor("white").get().withAlpha(color.alpha());
         }
-        RenderUtils.drawRect(x, y, width, height, color.color());
+        RenderUtils.drawRect(ctx, x, y, width, height, color.color());
         drawCenteredString(
+                ctx,
                 (x + (width / 2)),
                 (y + (height / 2) - 3),
                 Colors.getInstance().getColorOrWhite("white").color(),
-                displayString,
-                matrixStack);
+                displayString);
     }
 }

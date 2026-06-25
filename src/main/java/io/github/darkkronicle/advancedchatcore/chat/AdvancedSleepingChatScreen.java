@@ -8,11 +8,12 @@
 package io.github.darkkronicle.advancedchatcore.chat;
 
 import fi.dy.masa.malilib.gui.GuiBase;
-import fi.dy.masa.malilib.gui.button.ButtonGeneric;
 import fi.dy.masa.malilib.util.KeyCodes;
-import fi.dy.masa.malilib.util.StringUtils;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 
 public class AdvancedSleepingChatScreen extends AdvancedChatScreen {
 
@@ -20,46 +21,51 @@ public class AdvancedSleepingChatScreen extends AdvancedChatScreen {
         super("");
     }
 
-    public void initGui() {
-        super.initGui();
-        ButtonGeneric stopSleep =
-                new ButtonGeneric(
-                        this.width / 2 - 100,
-                        this.height - 40,
-                        200,
-                        20,
-                        StringUtils.translate("multiplayer.stopSleeping"));
-        this.addButton(stopSleep, (button, mouseButton) -> stopSleeping());
+    @Override
+    protected void init() {
+        super.init();
+        // A vanilla Button mounts fine on the Screen render path (unlike the old MaLiLib
+        // ButtonGeneric), so restore the on-screen "Stop sleeping" button, matching vanilla
+        // InBedChatScreen's placement.
+        this.addRenderableWidget(
+                Button.builder(Component.translatable("multiplayer.stopSleeping"), btn -> this.stopSleeping())
+                        .bounds(this.width / 2 - 100, this.height - 40, 200, 20)
+                        .build());
     }
 
+    @Override
     public void onClose() {
         this.stopSleeping();
     }
 
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    @Override
+    public boolean keyPressed(KeyEvent keyEvent) {
+        int keyCode = keyEvent.key();
         if (keyCode == KeyCodes.KEY_ESCAPE) {
             this.stopSleeping();
         } else if (keyCode == KeyCodes.KEY_ENTER || keyCode == KeyCodes.KEY_KP_ENTER) {
-            String string = this.chatField.getText().trim();
+            String string = this.chatField.getValue().trim();
             if (!string.isEmpty()) {
                 MessageSender.getInstance().sendMessage(string);
             }
 
             this.chatField.setText("");
-            this.client.inGameHud.getChatHud().resetScroll();
+            this.minecraft.gui.hud.getChat().resetChatScroll();
             // Prevents really weird interactions with chat history
             resetCurrentMessage();
             return true;
         }
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(keyEvent);
     }
 
     private void stopSleeping() {
-        ClientPlayNetworkHandler clientPlayNetworkHandler = this.client.player.networkHandler;
-        clientPlayNetworkHandler.sendPacket(
-                new ClientCommandC2SPacket(
-                        this.client.player, ClientCommandC2SPacket.Mode.STOP_SLEEPING));
+        ClientPacketListener clientPlayNetworkHandler = this.minecraft.player.connection;
+        // 26.2: STOP_SLEEPING moved from ServerboundClientCommandPacket to
+        // ServerboundPlayerCommandPacket(Entity, Action.STOP_SLEEPING).
+        clientPlayNetworkHandler.send(
+                new ServerboundPlayerCommandPacket(
+                        this.minecraft.player, ServerboundPlayerCommandPacket.Action.STOP_SLEEPING));
         GuiBase.openGui(null);
     }
 }
