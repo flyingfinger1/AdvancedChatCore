@@ -10,6 +10,7 @@ package io.github.darkkronicle.advancedchatcore.chat;
 import io.github.darkkronicle.advancedchatcore.AdvancedChatCore;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import io.github.darkkronicle.advancedchatcore.config.gui.GuiConfigHandler;
+import io.github.darkkronicle.advancedchatcore.gui.CleanButton;
 import io.github.darkkronicle.advancedchatcore.gui.IconButton;
 import io.github.darkkronicle.advancedchatcore.interfaces.AdvancedChatScreenSection;
 import io.github.darkkronicle.advancedchatcore.util.Color;
@@ -60,10 +61,10 @@ public class AdvancedChatScreen extends Screen {
     private final List<AdvancedChatScreenSection> sections = new ArrayList<>();
 
     @Getter
-    private final RowList<IconButton> rightSideButtons = new RowList<>();
+    private final RowList<CleanButton> rightSideButtons = new RowList<>();
 
     @Getter
-    private final RowList<IconButton> leftSideButtons = new RowList<>();
+    private final RowList<CleanButton> leftSideButtons = new RowList<>();
 
     public AdvancedChatScreen() {
         // Title required by Screen constructor
@@ -171,10 +172,10 @@ public class AdvancedChatScreen extends Screen {
         int originalX = this.minecraft.getWindow().getGuiScaledWidth() - 1;
         int y = this.minecraft.getWindow().getGuiScaledHeight() - 30;
         for (int i = 0; i < rightSideButtons.rowSize(); i++) {
-            List<IconButton> buttonList = rightSideButtons.get(i);
+            List<CleanButton> buttonList = rightSideButtons.get(i);
             int maxHeight = 0;
             int x = originalX;
-            for (IconButton button : buttonList) {
+            for (CleanButton button : buttonList) {
                 maxHeight = Math.max(maxHeight, button.getHeight());
                 x -= button.getWidth() + 1;
                 button.setPosition(x, y);
@@ -186,10 +187,10 @@ public class AdvancedChatScreen extends Screen {
         originalX = 1;
         y = this.minecraft.getWindow().getGuiScaledHeight() - 30;
         for (int i = 0; i < leftSideButtons.rowSize(); i++) {
-            List<IconButton> buttonList = leftSideButtons.get(i);
+            List<CleanButton> buttonList = leftSideButtons.get(i);
             int maxHeight = 0;
             int x = originalX;
-            for (IconButton button : buttonList) {
+            for (CleanButton button : buttonList) {
                 maxHeight = Math.max(maxHeight, button.getHeight());
                 button.setPosition(x, y);
                 x += button.getWidth() + 1;
@@ -335,7 +336,7 @@ public class AdvancedChatScreen extends Screen {
         }
         // Dispatch clicks to the manually-managed MaLiLib icon buttons.
         for (int i = 0; i < rightSideButtons.rowSize(); i++) {
-            for (IconButton b : rightSideButtons.get(i)) {
+            for (CleanButton b : rightSideButtons.get(i)) {
                 if (b.isMouseOver((int) mouseX, (int) mouseY)
                         && b.onMouseClicked(mouseButtonEvent, doubleClick)) {
                     return true;
@@ -343,7 +344,7 @@ public class AdvancedChatScreen extends Screen {
             }
         }
         for (int i = 0; i < leftSideButtons.rowSize(); i++) {
-            for (IconButton b : leftSideButtons.get(i)) {
+            for (CleanButton b : leftSideButtons.get(i)) {
                 if (b.isMouseOver((int) mouseX, (int) mouseY)
                         && b.onMouseClicked(mouseButtonEvent, doubleClick)) {
                     return true;
@@ -461,12 +462,12 @@ public class AdvancedChatScreen extends Screen {
         // Render the manually-managed MaLiLib icon buttons through the MaLiLib GuiContext.
         fi.dy.masa.malilib.render.GuiContext ctx = fi.dy.masa.malilib.render.GuiContext.fromGuiGraphics(guiGraphics);
         for (int i = 0; i < rightSideButtons.rowSize(); i++) {
-            for (IconButton b : rightSideButtons.get(i)) {
+            for (CleanButton b : rightSideButtons.get(i)) {
                 b.render(ctx, mouseX, mouseY, false);
             }
         }
         for (int i = 0; i < leftSideButtons.rowSize(); i++) {
-            for (IconButton b : leftSideButtons.get(i)) {
+            for (CleanButton b : leftSideButtons.get(i)) {
                 b.render(ctx, mouseX, mouseY, false);
             }
         }

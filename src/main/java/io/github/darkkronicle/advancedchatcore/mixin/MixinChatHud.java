@@ -14,6 +14,7 @@ import io.github.darkkronicle.advancedchatcore.chat.MessageDispatcher;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ChatComponent;
+import net.minecraft.client.multiplayer.chat.GuiMessageSource;
 import net.minecraft.client.multiplayer.chat.GuiMessageTag;
 import net.minecraft.network.chat.MessageSignature;
 import net.minecraft.network.chat.Component;
@@ -31,13 +32,15 @@ public class MixinChatHud {
 
     @Shadow @Final private Minecraft minecraft;
 
-    // 26.2: Yarn ChatHud.addMessage(Text, MessageSignatureData, MessageIndicator) is now the
-    // public ChatComponent.addPlayerMessage(Component, MessageSignature, GuiMessageTag).
+    // 26.2: intercept the private addMessage(Component, MessageSignature, GuiMessageSource,
+    // GuiMessageTag) — the common funnel that ALL three public entry points call (addPlayerMessage,
+    // addClientSystemMessage, addServerSystemMessage). Hooking only addPlayerMessage misses system
+    // and command messages (e.g. /locate output), which must also reach the dispatcher and history.
     @Inject(
-            method = "addPlayerMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
+            method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"),
             cancellable = true)
-    private void addMessage(Component message, @Nullable MessageSignature signature, @Nullable GuiMessageTag indicator, CallbackInfo ci) {
+    private void addMessage(Component message, @Nullable MessageSignature signature, @Nullable GuiMessageSource source, @Nullable GuiMessageTag indicator, CallbackInfo ci) {
         // Our own re-add of a processed message: let vanilla render it instead of re-dispatching
         // (which would recurse forever).
         if (ChatHistoryProcessor.FORWARDING_TO_HUD) {
