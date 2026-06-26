@@ -94,7 +94,9 @@ public class SearchUtils {
             if (digit == 0 || digit > groups.size()) {
                 continue;
             }
-            edited.append(input, last, m.start).append(groups.get(digit));
+            // $1 refers to the first group, so it maps to index 0; and append the matched STRING,
+            // not the StringMatch object (whose Lombok toString would leak "StringMatch(match=..)").
+            edited.append(input, last, m.start).append(groups.get(digit - 1).match);
             last = m.end;
         }
         if (last != input.length()) {

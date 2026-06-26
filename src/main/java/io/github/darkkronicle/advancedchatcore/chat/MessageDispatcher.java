@@ -121,9 +121,15 @@ public class MessageDispatcher {
 
     private Component preFilter(Component text, @Nullable MessageSignature signature, @Nullable GuiMessageTag indicator) {
         for (IMessageFilter f : preFilters) {
-            Optional<Component> t = f.filter(text);
-            if (t.isPresent()) {
-                text = t.get();
+            // A misbehaving filter (from any module) must never crash chat handling — that would
+            // disconnect the client. Skip the offending filter and keep going.
+            try {
+                Optional<Component> t = f.filter(text);
+                if (t.isPresent()) {
+                    text = t.get();
+                }
+            } catch (Throwable e) {
+                AdvancedChatCore.LOGGER.error("A chat pre-filter threw; skipping it for this message", e);
             }
         }
         return text;
@@ -131,7 +137,11 @@ public class MessageDispatcher {
 
     private void process(Component text, @Nullable MessageSignature signature, @Nullable GuiMessageTag indicator) {
         for (IMessageFilter f : processors) {
-            f.filter(text);
+            try {
+                f.filter(text);
+            } catch (Throwable e) {
+                AdvancedChatCore.LOGGER.error("A chat processor threw; skipping it for this message", e);
+            }
         }
     }
 
