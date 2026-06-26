@@ -64,9 +64,9 @@ public class AdvancedChatCore implements ClientModInitializer {
         ClientTickEvents.START_CLIENT_TICK.register(
                 s -> {
                     // Allow for delayed tasks to be added
-                    SyncTaskQueue.getInstance().update(s.gui.hud.getGuiTicks());
+                    SyncTaskQueue.getInstance().update(s.gui.getGuiTicks());
                     // Make sure we're not in the sleeping screen while awake
-                    if (client.gui.screen() instanceof AdvancedSleepingChatScreen
+                    if (client.screen instanceof AdvancedSleepingChatScreen
                             && !client.player.isSleeping()) {
                         GuiBase.openGui(null);
                     }

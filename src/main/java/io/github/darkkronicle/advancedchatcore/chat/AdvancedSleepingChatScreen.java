@@ -50,7 +50,7 @@ public class AdvancedSleepingChatScreen extends AdvancedChatScreen {
             }
 
             this.chatField.setText("");
-            this.minecraft.gui.hud.getChat().resetChatScroll();
+            this.minecraft.gui.getChat().resetChatScroll();
             // Prevents really weird interactions with chat history
             resetCurrentMessage();
             return true;

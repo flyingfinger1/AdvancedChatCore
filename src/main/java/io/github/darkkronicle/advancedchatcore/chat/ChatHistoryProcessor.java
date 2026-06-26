@@ -40,7 +40,7 @@ public class ChatHistoryProcessor implements IMessageProcessor {
             // guard against re-entry and let vanilla render this (already processed) message.
             FORWARDING_TO_HUD = true;
             try {
-                Minecraft.getInstance().gui.hud.getChat().addPlayerMessage(text, signature, indicator);
+                Minecraft.getInstance().gui.getChat().addPlayerMessage(text, signature, indicator);
             } finally {
                 FORWARDING_TO_HUD = false;
             }
@@ -89,7 +89,7 @@ public class ChatHistoryProcessor implements IMessageProcessor {
                 .owner(player)
                 .id(0)
                 .width(width)
-                .creationTick(Minecraft.getInstance().gui.hud.getGuiTicks())
+                .creationTick(Minecraft.getInstance().gui.getGuiTicks())
                 .time(time)
                 .backgroundColor(null)
                 .build();

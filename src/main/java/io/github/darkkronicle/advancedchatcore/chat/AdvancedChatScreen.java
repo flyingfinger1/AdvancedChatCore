@@ -101,7 +101,7 @@ public class AdvancedChatScreen extends Screen {
     }
 
     public void resetCurrentMessage() {
-        this.messageHistorySize = this.minecraft.gui.hud.getChat().getRecentChat().size();
+        this.messageHistorySize = this.minecraft.gui.getChat().getRecentChat().size();
     }
 
     @Override
@@ -277,14 +277,14 @@ public class AdvancedChatScreen extends Screen {
         }
         if (keyCode == GLFW.GLFW_KEY_PAGE_UP) {
             // Scroll
-            this.minecraft.gui.hud.getChat()
-                    .scrollChat(this.minecraft.gui.hud.getChat().getLinesPerPage() - 1);
+            this.minecraft.gui.getChat()
+                    .scrollChat(this.minecraft.gui.getChat().getLinesPerPage() - 1);
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_PAGE_DOWN) {
             // Scroll
-            this.minecraft.gui.hud.getChat()
-                    .scrollChat(-this.minecraft.gui.hud.getChat().getLinesPerPage() + 1);
+            this.minecraft.gui.getChat()
+                    .scrollChat(-this.minecraft.gui.getChat().getLinesPerPage() + 1);
             return true;
         }
         if (passEvents) {
@@ -320,7 +320,7 @@ public class AdvancedChatScreen extends Screen {
         }
 
         // Send to hud to scroll
-        this.minecraft.gui.hud.getChat().scrollChat((int) amount);
+        this.minecraft.gui.getChat().scrollChat((int) amount);
         return true;
     }
 
@@ -361,8 +361,8 @@ public class AdvancedChatScreen extends Screen {
             ActiveTextCollector.ClickableStyleFinder finder =
                     new ActiveTextCollector.ClickableStyleFinder(this.font, (int) mouseX, (int) mouseY)
                             .includeInsertions(insertionMode);
-            this.minecraft.gui.hud.getChat().captureClickableText(
-                    finder, scaledHeight, this.minecraft.gui.hud.getGuiTicks(),
+            this.minecraft.gui.getChat().captureClickableText(
+                    finder, scaledHeight, this.minecraft.gui.getGuiTicks(),
                     ChatComponent.DisplayMode.FOREGROUND);
             Style style = finder.result();
             if (style != null) {
@@ -418,7 +418,7 @@ public class AdvancedChatScreen extends Screen {
 
     public void setChatFromHistory(int i) {
         int targetIndex = this.messageHistorySize + i;
-        int maxIndex = this.minecraft.gui.hud.getChat().getRecentChat().size();
+        int maxIndex = this.minecraft.gui.getChat().getRecentChat().size();
         targetIndex = Mth.clamp(targetIndex, 0, maxIndex);
         if (targetIndex != this.messageHistorySize) {
             if (targetIndex == maxIndex) {
@@ -429,7 +429,7 @@ public class AdvancedChatScreen extends Screen {
                     this.finalHistory = this.chatField.getValue();
                 }
 
-                String hist = this.minecraft.gui.hud.getChat().getRecentChat().get(targetIndex);
+                String hist = this.minecraft.gui.getChat().getRecentChat().get(targetIndex);
                 this.chatField.setText(hist);
                 for (AdvancedChatScreenSection section : sections) {
                     section.setChatFromHistory(hist);
@@ -454,9 +454,9 @@ public class AdvancedChatScreen extends Screen {
         // Render the chat history. In 26.x the in-game HUD (and thus the chat) is not drawn behind
         // an open Screen, so — like vanilla ChatScreen — we render the ChatComponent ourselves in
         // FOREGROUND mode, otherwise the history would be invisible while typing.
-        ChatComponent chat = this.minecraft.gui.hud.getChat();
+        ChatComponent chat = this.minecraft.gui.getChat();
         guiGraphics.nextStratum();
-        chat.extractRenderState(guiGraphics, this.font, this.minecraft.gui.hud.getGuiTicks(),
+        chat.extractRenderState(guiGraphics, this.font, this.minecraft.gui.getGuiTicks(),
                 mouseX, mouseY, ChatComponent.DisplayMode.FOREGROUND, false);
 
         // Render the manually-managed MaLiLib icon buttons through the MaLiLib GuiContext.

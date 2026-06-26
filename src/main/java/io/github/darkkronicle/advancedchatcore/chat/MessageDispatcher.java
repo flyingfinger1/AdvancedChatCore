@@ -104,7 +104,7 @@ public class MessageDispatcher {
      * This is ONLY used for new messages in chat
      *
      * <p>Note: It is not recommended to call this method to force add new text. Typically, grabbing
-     * the {@link net.minecraft.client.gui.hud.ChatComponent} from {@link
+     * the {@link net.minecraft.client.gui.ChatComponent} from {@link
      * net.minecraft.client.Minecraft} and calling addText is a safer way.
      *
      * @param text Component that is received

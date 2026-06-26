@@ -33,7 +33,7 @@ public class SyncTaskQueue {
 
         /**
          * Tick number when it should be triggered. This isn't delay, this is based off of the
-         * current tick value in {@link net.minecraft.client.gui.hud.InGameHud}
+         * current tick value in {@link net.minecraft.client.gui.InGameHud}
          */
         int tick;
 

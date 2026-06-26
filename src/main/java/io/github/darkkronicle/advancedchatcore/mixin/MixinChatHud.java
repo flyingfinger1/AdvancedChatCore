@@ -67,8 +67,8 @@ public class MixinChatHud {
     @Inject(method = "isChatFocused", at = @At("HEAD"), cancellable = true)
     private void isChatFocused(CallbackInfoReturnable<Boolean> ci) {
         // If the chat is focused. 26.2: Minecraft has no `currentScreen`; the current screen is
-        // reached through Gui (minecraft.gui.screen()).
-        ci.setReturnValue(AdvancedChatScreen.PERMANENT_FOCUS || minecraft.gui.screen() instanceof AdvancedChatScreen);
+        // reached through Gui (minecraft.screen).
+        ci.setReturnValue(AdvancedChatScreen.PERMANENT_FOCUS || minecraft.screen instanceof AdvancedChatScreen);
     }
 
     // 26.2: the in-bed chat auto-opens through ChatComponent.openScreen(ChatMethod, ChatConstructor),

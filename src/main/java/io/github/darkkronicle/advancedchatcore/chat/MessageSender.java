@@ -47,7 +47,7 @@ public class MessageSender {
         if (string.length() > 256) {
             string = string.substring(0, 256);
         }
-        this.client.gui.hud.getChat().addRecentChat(unfiltered);
+        this.client.gui.getChat().addRecentChat(unfiltered);
 
         if (string.length() == 0) {
             AdvancedChatCore.LOGGER.warn("Blank message was attempted to be sent. " + unfiltered);
