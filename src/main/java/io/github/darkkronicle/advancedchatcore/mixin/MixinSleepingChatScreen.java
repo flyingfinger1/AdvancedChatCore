@@ -28,13 +28,14 @@ public class MixinSleepingChatScreen extends ChatScreen {
     }
 
     // 26.2: Yarn SleepingChatScreen.closeChatIfEmpty() is now InBedChatScreen.onPlayerWokeUp().
-    // That method has two Gui.setScreen(Screen) calls: ordinal 0 = setScreen(null) (empty input),
+    // That method has two setScreen(Screen) calls: ordinal 0 = setScreen(null) (empty input),
     // ordinal 1 = setScreen(new ChatScreen(input, false)) (non-empty input). We swap the ordinal-1
-    // argument for our AdvancedChatScreen, matching the original intent. The setScreen call is now on
-    // net.minecraft.client.gui.Gui (was MinecraftClient).
+    // argument for our AdvancedChatScreen, matching the original intent.
+    // 26.1: the setScreen call is on net.minecraft.client.Minecraft (it moved onto
+    // net.minecraft.client.gui.Gui only in 26.2), so the @At target class is Minecraft here.
     @ModifyArg(method = "onPlayerWokeUp",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/Gui;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V", ordinal = 1))
+                    target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V", ordinal = 1))
     public Screen openSleepingChatScreen(@Nullable Screen screen) {
         // 26.2: Yarn chatField (TextFieldWidget) is now the inherited `input` (EditBox);
         // getText() -> getValue().
