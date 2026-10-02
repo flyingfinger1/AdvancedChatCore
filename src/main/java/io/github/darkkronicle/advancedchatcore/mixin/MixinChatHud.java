@@ -9,12 +9,12 @@ package io.github.darkkronicle.advancedchatcore.mixin;
 
 import io.github.darkkronicle.advancedchatcore.chat.AdvancedChatScreen;
 import io.github.darkkronicle.advancedchatcore.chat.AdvancedSleepingChatScreen;
+import io.github.darkkronicle.advancedchatcore.chat.ChatHistory;
 import io.github.darkkronicle.advancedchatcore.chat.ChatHistoryProcessor;
 import io.github.darkkronicle.advancedchatcore.chat.MessageDispatcher;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ChatComponent;
-import net.minecraft.client.multiplayer.chat.GuiMessageSource;
 import net.minecraft.client.multiplayer.chat.GuiMessageTag;
 import net.minecraft.network.chat.MessageSignature;
 import net.minecraft.network.chat.Component;
@@ -32,30 +32,49 @@ public class MixinChatHud {
 
     @Shadow @Final private Minecraft minecraft;
 
-    // 26.2: intercept the private addMessage(Component, MessageSignature, GuiMessageSource,
-    // GuiMessageTag) — the common funnel that ALL three public entry points call (addPlayerMessage,
-    // addClientSystemMessage, addServerSystemMessage). Hooking only addPlayerMessage misses system
-    // and command messages (e.g. /locate output), which must also reach the dispatcher and history.
+    // 26.3: the private addMessage(Component, MessageSignature, GuiMessageSource, GuiMessageTag) funnel
+    // that 26.2 intercepted was removed. The three public entry points are now hooked individually; each
+    // routes the message to the dispatcher and cancels vanilla. AdvancedChat re-adds the processed
+    // message via addPlayerMessage (see ChatHistoryProcessor), guarded by FORWARDING_TO_HUD so the
+    // re-add renders normally instead of recursing. (addPlayerMessage is 3-arg on 26.3 — no GuiMessageSource.)
     @Inject(
-            method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
+            method = "addPlayerMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"),
             cancellable = true)
-    private void addMessage(Component message, @Nullable MessageSignature signature, @Nullable GuiMessageSource source, @Nullable GuiMessageTag indicator, CallbackInfo ci) {
-        // Our own re-add of a processed message: let vanilla render it instead of re-dispatching
-        // (which would recurse forever).
+    private void advancedchatcore$onPlayerMessage(Component message, @Nullable MessageSignature signature, @Nullable GuiMessageTag indicator, CallbackInfo ci) {
         if (ChatHistoryProcessor.FORWARDING_TO_HUD) {
             return;
         }
-        // Pass forward messages to dispatcher
         MessageDispatcher.getInstance().handleText(message, signature, indicator);
         ci.cancel();
     }
 
-    // 26.2: Yarn ChatHud.clear(Z) is now ChatComponent.clearMessages(Z).
+    @Inject(method = "addClientSystemMessage(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true)
+    private void advancedchatcore$onClientSystemMessage(Component message, CallbackInfo ci) {
+        if (ChatHistoryProcessor.FORWARDING_TO_HUD) {
+            return;
+        }
+        MessageDispatcher.getInstance().handleText(message, null, null);
+        ci.cancel();
+    }
+
+    @Inject(method = "addServerSystemMessage(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true)
+    private void advancedchatcore$onServerSystemMessage(Component message, CallbackInfo ci) {
+        if (ChatHistoryProcessor.FORWARDING_TO_HUD) {
+            return;
+        }
+        MessageDispatcher.getInstance().handleText(message, null, null);
+        ci.cancel();
+    }
+
+    // Yarn ChatHud.clear(Z) is ChatComponent.clearMessages(Z).
     @Inject(method = "clearMessages", at = @At("HEAD"), cancellable = true)
     private void clearMessages(boolean clearTextHistory, CallbackInfo ci) {
         if (!clearTextHistory) {
-            // This only gets called if it is the keybind f3 + d
+            // F3+D "clear chat" path: also clear AdvancedChat's stored history. 26.3 removed
+            // KeyboardHandler.handleDebugKeys (the former MixinKeyboard hook point), so that behaviour
+            // is folded in here.
+            ChatHistory.getInstance().clearAll();
             return;
         }
         if (!ConfigStorage.General.CLEAR_ON_DISCONNECT.config.getBooleanValue()) {
@@ -66,16 +85,13 @@ public class MixinChatHud {
 
     @Inject(method = "isChatFocused", at = @At("HEAD"), cancellable = true)
     private void isChatFocused(CallbackInfoReturnable<Boolean> ci) {
-        // If the chat is focused. 26.2: Minecraft has no `currentScreen`; the current screen is
-        // reached through Gui (minecraft.gui.screen()).
+        // If the chat is focused. The current screen is reached through Gui (minecraft.gui.screen()).
         ci.setReturnValue(AdvancedChatScreen.PERMANENT_FOCUS || minecraft.gui.screen() instanceof AdvancedChatScreen);
     }
 
-    // 26.2: the in-bed chat auto-opens through ChatComponent.openScreen(ChatMethod, ChatConstructor),
-    // called directly from Gui.tick — NOT through Gui.openChatScreen (which MixinGui handles). Hook it
-    // here so sleeping shows AdvancedChat's own screen (restoring the original behavior) instead of
-    // vanilla's InBedChatScreen. openScreen only does gui.setScreen(createScreen(...)), so cancelling
-    // at HEAD and opening our screen directly is side-effect-free.
+    // The in-bed chat auto-opens through ChatComponent.openScreen(ChatMethod, ChatConstructor), called
+    // directly from Gui.tick — NOT through Gui.openChatScreen (which MixinGui handles). Hook it here so
+    // sleeping shows AdvancedChat's own screen instead of vanilla's InBedChatScreen.
     @Inject(
             method = "openScreen(Lnet/minecraft/client/gui/components/ChatComponent$ChatMethod;Lnet/minecraft/client/gui/screens/ChatScreen$ChatConstructor;)V",
             at = @At("HEAD"),

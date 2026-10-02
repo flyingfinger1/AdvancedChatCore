@@ -8,7 +8,6 @@
     "MixinChatHud",
     "MixinChatScreen",
     "MixinGui",
-    "MixinKeyboard",
     "MixinMinecraftClient",
     "MixinSleepingChatScreen",
     "MixinMessageIndicator"

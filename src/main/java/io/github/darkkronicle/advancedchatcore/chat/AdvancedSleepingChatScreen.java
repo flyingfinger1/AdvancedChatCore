@@ -8,7 +8,7 @@
 package io.github.darkkronicle.advancedchatcore.chat;
 
 import fi.dy.masa.malilib.gui.GuiBase;
-import fi.dy.masa.malilib.util.KeyCodes;
+import fi.dy.masa.malilib.util.input.KeyCodes;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -43,7 +43,7 @@ public class AdvancedSleepingChatScreen extends AdvancedChatScreen {
         int keyCode = keyEvent.key();
         if (keyCode == KeyCodes.KEY_ESCAPE) {
             this.stopSleeping();
-        } else if (keyCode == KeyCodes.KEY_ENTER || keyCode == KeyCodes.KEY_KP_ENTER) {
+        } else if (keyCode == KeyCodes.KEY_RETURN || keyCode == KeyCodes.KEY_KP_ENTER) {
             String string = this.chatField.getValue().trim();
             if (!string.isEmpty()) {
                 MessageSender.getInstance().sendMessage(string);

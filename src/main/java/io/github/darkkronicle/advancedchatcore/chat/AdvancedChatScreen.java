@@ -32,7 +32,7 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import org.lwjgl.glfw.GLFW;
+import fi.dy.masa.malilib.util.input.KeyCodes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -236,7 +236,7 @@ public class AdvancedChatScreen extends Screen {
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
         int keyCode = keyEvent.key();
-        int scanCode = keyEvent.scancode();
+        int scanCode = keyEvent.keycode();
         int modifiers = keyEvent.modifiers();
         if (!passEvents) {
             for (AdvancedChatScreenSection section : sections) {
@@ -249,13 +249,13 @@ public class AdvancedChatScreen extends Screen {
             }
         }
 
-        // Map legacy KeyCodes to GLFW codes
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+        // Map against logical key codes (26.3 dropped GLFW for SDL; MaLiLib KeyCodes still abstracts them)
+        if (keyCode == KeyCodes.KEY_ESCAPE) {
             // Exit out
             Minecraft.getInstance().setScreenAndShow(null);
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+        if (keyCode == KeyCodes.KEY_RETURN || keyCode == KeyCodes.KEY_KP_ENTER) {
             String string = this.chatField.getValue().trim();
             // Strip message and send
             MessageSender.getInstance().sendMessage(string);
@@ -265,23 +265,23 @@ public class AdvancedChatScreen extends Screen {
             Minecraft.getInstance().setScreenAndShow(null);
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_UP) {
+        if (keyCode == KeyCodes.KEY_UP) {
             // Go through previous history
             this.setChatFromHistory(-1);
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_DOWN) {
+        if (keyCode == KeyCodes.KEY_DOWN) {
             // Go through previous history
             this.setChatFromHistory(1);
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_PAGE_UP) {
+        if (keyCode == KeyCodes.KEY_PAGE_UP) {
             // Scroll
             this.minecraft.gui.hud.getChat()
                     .scrollChat(this.minecraft.gui.hud.getChat().getLinesPerPage() - 1);
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_PAGE_DOWN) {
+        if (keyCode == KeyCodes.KEY_PAGE_DOWN) {
             // Scroll
             this.minecraft.gui.hud.getChat()
                     .scrollChat(-this.minecraft.gui.hud.getChat().getLinesPerPage() + 1);
@@ -313,8 +313,8 @@ public class AdvancedChatScreen extends Screen {
             }
         }
         // 26.2: static Screen.hasShiftDown() is gone; query the window directly.
-        boolean shift = InputConstants.isKeyDown(this.minecraft.getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)
-                || InputConstants.isKeyDown(this.minecraft.getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT);
+        boolean shift = InputConstants.isKeyDown(KeyCodes.KEY_LEFT_SHIFT)
+                || InputConstants.isKeyDown(KeyCodes.KEY_RIGHT_SHIFT);
         if (!shift) {
             amount *= 7.0D;
         }
@@ -355,8 +355,8 @@ public class AdvancedChatScreen extends Screen {
         // via the 26.x ActiveTextCollector model that replaced ChatComponent.getTextStyleAt.
         if (button == 0) {
             boolean insertionMode =
-                    InputConstants.isKeyDown(this.minecraft.getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)
-                            || InputConstants.isKeyDown(this.minecraft.getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT);
+                    InputConstants.isKeyDown(KeyCodes.KEY_LEFT_SHIFT)
+                            || InputConstants.isKeyDown(KeyCodes.KEY_RIGHT_SHIFT);
             int scaledHeight = this.minecraft.getWindow().getGuiScaledHeight();
             ActiveTextCollector.ClickableStyleFinder finder =
                     new ActiveTextCollector.ClickableStyleFinder(this.font, (int) mouseX, (int) mouseY)
