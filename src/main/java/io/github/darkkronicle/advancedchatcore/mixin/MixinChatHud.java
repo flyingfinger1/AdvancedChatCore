@@ -9,7 +9,6 @@ package io.github.darkkronicle.advancedchatcore.mixin;
 
 import io.github.darkkronicle.advancedchatcore.chat.AdvancedChatScreen;
 import io.github.darkkronicle.advancedchatcore.chat.AdvancedSleepingChatScreen;
-import io.github.darkkronicle.advancedchatcore.chat.ChatHistory;
 import io.github.darkkronicle.advancedchatcore.chat.ChatHistoryProcessor;
 import io.github.darkkronicle.advancedchatcore.chat.MessageDispatcher;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
@@ -71,10 +70,11 @@ public class MixinChatHud {
     @Inject(method = "clearMessages", at = @At("HEAD"), cancellable = true)
     private void clearMessages(boolean clearTextHistory, CallbackInfo ci) {
         if (!clearTextHistory) {
-            // F3+D "clear chat" path: also clear AdvancedChat's stored history. 26.3 removed
-            // KeyboardHandler.handleDebugKeys (the former MixinKeyboard hook point), so that behaviour
-            // is folded in here.
-            ChatHistory.getInstance().clearAll();
+            // F3+D "clear chat": let vanilla clear the display. 26.2 also cleared AdvancedChat's own
+            // history here (via MixinKeyboard/handleDebugKeys, removed in 26.3), but it must NOT be done
+            // from inside clearMessages: ChatHistory.clearAll() re-enters this method through HUD's
+            // WindowManager.clear -> ChatComponent.clear -> clearMessages, causing infinite recursion
+            // (StackOverflow). So F3+D no longer clears AdvancedChat's stored history.
             return;
         }
         if (!ConfigStorage.General.CLEAR_ON_DISCONNECT.config.getBooleanValue()) {
