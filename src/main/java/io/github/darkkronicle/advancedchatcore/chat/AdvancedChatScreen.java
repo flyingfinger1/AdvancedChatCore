@@ -32,7 +32,6 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import fi.dy.masa.malilib.util.input.KeyCodes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -235,7 +234,7 @@ public class AdvancedChatScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
-        int keyCode = keyEvent.key();
+        int keyCode = keyEvent.input();
         int scanCode = keyEvent.keycode();
         int modifiers = keyEvent.modifiers();
         if (!passEvents) {
@@ -250,12 +249,12 @@ public class AdvancedChatScreen extends Screen {
         }
 
         // Map against logical key codes (26.3 dropped GLFW for SDL; MaLiLib KeyCodes still abstracts them)
-        if (keyCode == KeyCodes.KEY_ESCAPE) {
+        if (keyCode == InputConstants.KEY_ESCAPE) {
             // Exit out
             Minecraft.getInstance().setScreenAndShow(null);
             return true;
         }
-        if (keyCode == KeyCodes.KEY_RETURN || keyCode == KeyCodes.KEY_KP_ENTER) {
+        if (keyCode == InputConstants.KEY_RETURN || keyCode == InputConstants.KEY_NUMPADENTER) {
             String string = this.chatField.getValue().trim();
             // Strip message and send
             MessageSender.getInstance().sendMessage(string);
@@ -265,23 +264,23 @@ public class AdvancedChatScreen extends Screen {
             Minecraft.getInstance().setScreenAndShow(null);
             return true;
         }
-        if (keyCode == KeyCodes.KEY_UP) {
+        if (keyCode == InputConstants.KEY_UP) {
             // Go through previous history
             this.setChatFromHistory(-1);
             return true;
         }
-        if (keyCode == KeyCodes.KEY_DOWN) {
+        if (keyCode == InputConstants.KEY_DOWN) {
             // Go through previous history
             this.setChatFromHistory(1);
             return true;
         }
-        if (keyCode == KeyCodes.KEY_PAGE_UP) {
+        if (keyCode == InputConstants.KEY_PAGEUP) {
             // Scroll
             this.minecraft.gui.hud.getChat()
                     .scrollChat(this.minecraft.gui.hud.getChat().getLinesPerPage() - 1);
             return true;
         }
-        if (keyCode == KeyCodes.KEY_PAGE_DOWN) {
+        if (keyCode == InputConstants.KEY_PAGEDOWN) {
             // Scroll
             this.minecraft.gui.hud.getChat()
                     .scrollChat(-this.minecraft.gui.hud.getChat().getLinesPerPage() + 1);
@@ -313,8 +312,8 @@ public class AdvancedChatScreen extends Screen {
             }
         }
         // 26.2: static Screen.hasShiftDown() is gone; query the window directly.
-        boolean shift = InputConstants.isKeyDown(KeyCodes.KEY_LEFT_SHIFT)
-                || InputConstants.isKeyDown(KeyCodes.KEY_RIGHT_SHIFT);
+        boolean shift = InputConstants.isKeyDown(InputConstants.KEY_LSHIFT)
+                || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
         if (!shift) {
             amount *= 7.0D;
         }
@@ -353,10 +352,10 @@ public class AdvancedChatScreen extends Screen {
         }
         // Clickable chat text (links, run/suggest command, copy-to-clipboard, shift-click insert)
         // via the 26.x ActiveTextCollector model that replaced ChatComponent.getTextStyleAt.
-        if (button == 0) {
+        if (button == InputConstants.MOUSE_BUTTON_LEFT) {
             boolean insertionMode =
-                    InputConstants.isKeyDown(KeyCodes.KEY_LEFT_SHIFT)
-                            || InputConstants.isKeyDown(KeyCodes.KEY_RIGHT_SHIFT);
+                    InputConstants.isKeyDown(InputConstants.KEY_LSHIFT)
+                            || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
             int scaledHeight = this.minecraft.getWindow().getGuiScaledHeight();
             ActiveTextCollector.ClickableStyleFinder finder =
                     new ActiveTextCollector.ClickableStyleFinder(this.font, (int) mouseX, (int) mouseY)

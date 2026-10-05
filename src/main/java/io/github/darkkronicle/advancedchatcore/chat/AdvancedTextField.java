@@ -7,9 +7,9 @@
  */
 package io.github.darkkronicle.advancedchatcore.chat;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import fi.dy.masa.malilib.render.GuiContext;
 import fi.dy.masa.malilib.render.RenderUtils;
-import fi.dy.masa.malilib.util.input.KeyCodes;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import io.github.darkkronicle.advancedchatcore.util.StringMatch;
 import io.github.darkkronicle.advancedchatcore.util.StyleFormatter;
@@ -103,7 +103,7 @@ public class AdvancedTextField extends EditBox {
     public static boolean isUndo(KeyEvent keyEvent) {
         // Undo (Ctrl + Z). 26.2: modifier helpers moved from static Screen.* onto the
         // InputWithModifiers event (KeyEvent#hasControlDown / #hasAltDown).
-        return keyEvent.key() == KeyCodes.KEY_Z && keyEvent.hasControlDown() && !keyEvent.hasAltDown();
+        return keyEvent.input() == InputConstants.KEY_Z && keyEvent.hasControlDown() && !keyEvent.hasAltDown();
     }
 
     /** Triggers undo for the text box */
