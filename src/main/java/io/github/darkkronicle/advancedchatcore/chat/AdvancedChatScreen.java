@@ -481,6 +481,17 @@ public class AdvancedChatScreen extends Screen {
         // chat.extractRenderState above, so nothing extra is needed here.
     }
 
+    /**
+     * The chat overlay must stay transparent — it must not blur or darken the world behind it.
+     * 26.2+'s default {@code Screen.extractBackground} extracts a blurred in-world menu background
+     * (via {@code extractBlurredBackground}) which would render over the AdvancedChat chat windows;
+     * vanilla {@code ChatScreen} suppresses that by overriding this to extract nothing, so mirror it.
+     */
+    @Override
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        // Intentionally empty: no blur, no menu background.
+    }
+
     @Override
     public void onClose() {
         if (ConfigStorage.ChatScreen.PERSISTENT_TEXT.config.getBooleanValue()) {
