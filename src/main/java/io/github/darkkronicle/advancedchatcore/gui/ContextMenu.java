@@ -8,6 +8,7 @@ import io.github.darkkronicle.advancedchatcore.util.TextUtil;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
@@ -77,7 +78,10 @@ public class ContextMenu extends WidgetBase {
 
     @Override
     protected boolean onMouseClickedImpl(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
-        if (mouseButtonEvent.button() != 0) {
+        // 26.3: MouseButtonEvent.button() is in the InputConstants.MOUSE_BUTTON_* space (LEFT == 1),
+        // not GLFW's (LEFT == 0). Comparing against 0 here silently dropped every context-menu entry
+        // click, so the menu options did nothing.
+        if (mouseButtonEvent.button() != InputConstants.MOUSE_BUTTON_LEFT) {
             return false;
         }
         if (hoveredEntry == null) {
