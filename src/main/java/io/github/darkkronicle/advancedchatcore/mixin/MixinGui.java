@@ -46,7 +46,7 @@ public class MixinGui {
         Screen screen = (mc.player != null && mc.player.isSleeping())
                 ? new AdvancedSleepingChatScreen()
                 : new AdvancedChatScreen(method.prefix());
-        mc.setScreenAndShow(screen);
+        mc.setScreen(screen);
         ci.cancel();
     }
 }

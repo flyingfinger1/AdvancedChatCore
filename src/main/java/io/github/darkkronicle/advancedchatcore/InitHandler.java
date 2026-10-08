@@ -119,12 +119,13 @@ public class InitHandler implements IInitializationHandler {
                 return true;
             }
             // Manually update stuff so that movement keys are continued to be pressed.
-            // 26.2: Minecraft no longer exposes a settable `currentScreen` field or
-            // `skipGameRender`. setScreenAndShow handles removed()/init() of the previous and the
-            // new screen; we then release the mouse so the player keeps "free movement" while the
-            // chat screen is open (the original avoided the cursor grab by not calling setScreen).
+            // 26.2: Minecraft no longer exposes a settable `currentScreen` field or `skipGameRender`.
+            // Minecraft.setScreen handles removed()/init() of the previous and the new screen (NOT
+            // Minecraft.setScreenAndShow, which also forces an extra renderFrame and flashes a black
+            // frame); we then release the mouse so the player keeps "free movement" while the chat
+            // screen is open (the original avoided the cursor grab by not calling setScreen).
             Minecraft client = Minecraft.getInstance();
-            client.setScreenAndShow(new AdvancedChatScreen(true));
+            client.setScreen(new AdvancedChatScreen(true));
             client.mouseHandler.releaseMouse();
             client.updateTitle();
             return true;

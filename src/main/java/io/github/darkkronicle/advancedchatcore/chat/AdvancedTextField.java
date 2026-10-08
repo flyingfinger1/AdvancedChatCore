@@ -140,9 +140,13 @@ public class AdvancedTextField extends EditBox {
         updateRender();
     }
 
+    // Override the common deletion funnel, not deleteChars: EditBox routes BOTH deleteChars (Backspace)
+    // and deleteWords (Ctrl+Backspace) — plus selection deletes — through deleteCharsToPos. Hooking only
+    // deleteChars missed Ctrl+Backspace, so the value changed but renderLines (and thus the drawn text)
+    // was not rebuilt until the next keystroke.
     @Override
-    public void deleteChars(int characterOffset) {
-        super.deleteChars(characterOffset);
+    public void deleteCharsToPos(int position) {
+        super.deleteCharsToPos(position);
         updateHistory();
         updateRender();
     }

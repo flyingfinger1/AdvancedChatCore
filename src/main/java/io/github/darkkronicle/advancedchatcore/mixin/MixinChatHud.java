@@ -82,7 +82,7 @@ public class MixinChatHud {
             cancellable = true)
     private void advancedchatcore$openSleepingScreen(CallbackInfo ci) {
         if (minecraft.player != null && minecraft.player.isSleeping()) {
-            minecraft.setScreenAndShow(new AdvancedSleepingChatScreen());
+            minecraft.setScreen(new AdvancedSleepingChatScreen());
             ci.cancel();
         }
     }
