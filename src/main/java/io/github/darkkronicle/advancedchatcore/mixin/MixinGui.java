@@ -42,7 +42,10 @@ public class MixinGui {
         Screen screen = (mc.player != null && mc.player.isSleeping())
                 ? new AdvancedSleepingChatScreen()
                 : new AdvancedChatScreen(method.prefix());
-        mc.setScreenAndShow(screen);
+        // Use Gui.setScreen (what vanilla ChatComponent.openScreen uses), NOT Minecraft.setScreenAndShow:
+        // the latter also calls renderFrame(true), forcing an immediate extra frame when the chat opens,
+        // which flashes one black frame every time. Gui.setScreen just swaps the screen, no forced render.
+        mc.gui.setScreen(screen);
         ci.cancel();
     }
 
@@ -51,7 +54,7 @@ public class MixinGui {
             at = @At("HEAD"),
             cancellable = true)
     private void advancedchatcore$openChatAndAddText(ChatComponent.ChatMethod method, String text, CallbackInfo ci) {
-        Minecraft.getInstance().setScreenAndShow(new AdvancedChatScreen(text));
+        Minecraft.getInstance().gui.setScreen(new AdvancedChatScreen(text));
         ci.cancel();
     }
 }

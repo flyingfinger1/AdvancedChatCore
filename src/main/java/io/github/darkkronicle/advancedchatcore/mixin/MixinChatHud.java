@@ -98,7 +98,9 @@ public class MixinChatHud {
             cancellable = true)
     private void advancedchatcore$openSleepingScreen(CallbackInfo ci) {
         if (minecraft.player != null && minecraft.player.isSleeping()) {
-            minecraft.setScreenAndShow(new AdvancedSleepingChatScreen());
+            // Gui.setScreen, not Minecraft.setScreenAndShow (which forces an extra renderFrame and
+            // flashes a black frame on open).
+            minecraft.gui.setScreen(new AdvancedSleepingChatScreen());
             ci.cancel();
         }
     }

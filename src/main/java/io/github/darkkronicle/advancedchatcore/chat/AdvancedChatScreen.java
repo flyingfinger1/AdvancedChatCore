@@ -153,7 +153,7 @@ public class AdvancedChatScreen extends Screen {
         // laid out, rendered and click-dispatched manually below rather than via
         // addRenderableWidget (which requires a vanilla Renderable).
         IconButton settingsBtn = new IconButton(0, 0, 14, 64, Identifier.fromNamespaceAndPath(AdvancedChatCore.MOD_ID, "textures/gui/settings.png"), (button) -> {
-            Minecraft.getInstance().setScreenAndShow(GuiConfigHandler.getInstance().getDefaultScreen());
+            Minecraft.getInstance().gui.setScreen(GuiConfigHandler.getInstance().getDefaultScreen());
         });
         rightSideButtons.add("settings", settingsBtn);
 
@@ -251,7 +251,7 @@ public class AdvancedChatScreen extends Screen {
         // Map against logical key codes (26.3 dropped GLFW for SDL; MaLiLib KeyCodes still abstracts them)
         if (keyCode == InputConstants.KEY_ESCAPE) {
             // Exit out
-            Minecraft.getInstance().setScreenAndShow(null);
+            Minecraft.getInstance().gui.setScreen(null);
             return true;
         }
         if (keyCode == InputConstants.KEY_RETURN || keyCode == InputConstants.KEY_NUMPADENTER) {
@@ -261,7 +261,7 @@ public class AdvancedChatScreen extends Screen {
             this.chatField.setText("");
             last = "";
             // Exit
-            Minecraft.getInstance().setScreenAndShow(null);
+            Minecraft.getInstance().gui.setScreen(null);
             return true;
         }
         if (keyCode == InputConstants.KEY_UP) {
@@ -489,6 +489,17 @@ public class AdvancedChatScreen extends Screen {
     @Override
     public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         // Intentionally empty: no blur, no menu background.
+    }
+
+    /**
+     * The chat is an in-game overlay, not a menu — it must NOT pause the game. {@code Screen}'s default
+     * {@code isPauseScreen()} returns true, which makes the client treat this as a pause screen: it
+     * pauses singleplayer and runs the pause-screen render path, which flashes one black frame when the
+     * screen opens. Vanilla {@code ChatScreen} overrides this to false; mirror it.
+     */
+    @Override
+    public boolean isPauseScreen() {
+        return false;
     }
 
     @Override
