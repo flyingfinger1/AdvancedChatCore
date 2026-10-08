@@ -42,7 +42,7 @@ public class MixinGui {
         Screen screen = (mc.player != null && mc.player.isSleeping())
                 ? new AdvancedSleepingChatScreen()
                 : new AdvancedChatScreen(method.prefix());
-        mc.setScreenAndShow(screen);
+        mc.gui.setScreen(screen);
         ci.cancel();
     }
 
@@ -51,7 +51,7 @@ public class MixinGui {
             at = @At("HEAD"),
             cancellable = true)
     private void advancedchatcore$openChatAndAddText(ChatComponent.ChatMethod method, String text, CallbackInfo ci) {
-        Minecraft.getInstance().setScreenAndShow(new AdvancedChatScreen(text));
+        Minecraft.getInstance().gui.setScreen(new AdvancedChatScreen(text));
         ci.cancel();
     }
 }
