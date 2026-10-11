@@ -9,10 +9,10 @@ package io.github.darkkronicle.advancedchatcore.config;
 
 import fi.dy.masa.malilib.config.IConfigBase;
 import fi.dy.masa.malilib.config.options.ConfigBase;
-import fi.dy.masa.malilib.util.StringUtils;
 import io.github.darkkronicle.advancedchatcore.AdvancedChatCore;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.resources.language.I18n;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,8 +62,22 @@ public final class ConfigLang {
     public static void retranslate(List<SaveableConfig<? extends IConfigBase>> options, String prefix) {
         for (SaveableConfig<? extends IConfigBase> sc : options) {
             if (sc.config instanceof ConfigBase<?> cb) {
-                cb.setPrettyName(StringUtils.getTranslatedOrFallback(prefix + sc.key, cb.getName()));
-                cb.setComment(StringUtils.getTranslatedOrFallback(prefix + "info." + sc.key, cb.getComment()));
+                String nameKey = prefix + sc.key;
+                String commentKey = prefix + "info." + sc.key;
+                // MaLiLib's config GUI renders the label via getConfigGuiDisplayName() -> getTranslatedName()
+                // (NOT prettyName). Point it at our real translation key so MaLiLib translates it itself.
+                // This decouples the shown name from the frozen getName() (which may be stuck in the
+                // start-up language because the config class is loaded early via a mixin). Only set it
+                // when the key actually resolves, so nothing ever shows a raw key.
+                if (!I18n.get(nameKey).equals(nameKey)) {
+                    cb.setTranslatedName(nameKey);
+                }
+                // The tooltip comes from getComment(); set the translated text directly (MaLiLib returns
+                // it as-is when it isn't itself a translation key).
+                String comment = I18n.get(commentKey);
+                if (!comment.equals(commentKey)) {
+                    cb.setComment(comment);
+                }
             }
         }
     }
