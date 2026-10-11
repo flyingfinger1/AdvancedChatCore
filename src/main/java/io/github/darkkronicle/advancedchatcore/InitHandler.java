@@ -15,6 +15,7 @@ import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.interfaces.IInitializationHandler;
 import fi.dy.masa.malilib.util.InfoUtils;
 import io.github.darkkronicle.advancedchatcore.chat.*;
+import io.github.darkkronicle.advancedchatcore.config.ConfigLang;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import io.github.darkkronicle.advancedchatcore.config.gui.GuiConfig;
 import io.github.darkkronicle.advancedchatcore.config.gui.GuiConfigHandler;
@@ -60,6 +61,12 @@ public class InitHandler implements IInitializationHandler {
                         ConfigStorage.ChatScreen.OPTIONS.stream().map((saveableConfig) -> (IConfigBase) saveableConfig.config).toList()
                 ))
         );
+
+        // Keep these options' names/tooltips in the current language (see ConfigLang).
+        ConfigLang.registerRetranslator(() -> {
+            ConfigLang.retranslate(ConfigStorage.General.OPTIONS, "advancedchat.config.general.");
+            ConfigLang.retranslate(ConfigStorage.ChatScreen.OPTIONS, "advancedchat.config.chatscreen.");
+        });
 
         ProfanityUtil.getInstance().loadConfigs();
         MessageDispatcher.getInstance().registerPreFilter(text -> {
