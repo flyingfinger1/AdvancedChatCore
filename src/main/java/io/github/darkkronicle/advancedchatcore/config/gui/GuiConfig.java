@@ -37,6 +37,9 @@ public class GuiConfig extends GuiConfigsBase {
 
     @Override
     public void initGui() {
+        // Re-apply translations now that the language is loaded (and in case it changed in-game), so
+        // config names/tooltips of early-initialised modules aren't stuck in the start-up language.
+        io.github.darkkronicle.advancedchatcore.config.ConfigLang.retranslateAll();
         if (TAB == null) {
             // Should be general
             for (int i = 0; i < GuiConfigHandler.getInstance().getTabs().size(); i++) {
